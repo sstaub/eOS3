@@ -1,0 +1,15 @@
+{
+    "name": "eOS3",
+    "keywords": "ETC, EOS, OSC",
+    "description": "ETC EOS library for OSC",
+    "authors": {
+        "name": "Stefan Staub"
+    },
+    "repository":
+    {
+      "type": "git",
+      "url": "https://github.com/sstaub/eOS3"
+    },
+    "version": "1.0.0",
+    "frameworks": "arduino"
+}
