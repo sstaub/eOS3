@@ -1,14 +1,7 @@
 #include "eOS3.h"
+#include <cstddef>
+#include <cstdint>
 
-// TODO debounce algorithm
-/*
-	if (digitalRead(pin) != lastButtonState) {
-		lastDebounceTime = millis();
-		}
-	if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY_MS) {
-
-		}
-*/
 // TODO map function
 /*
 long map(long x, long in_min, long in_max, long out_min, long out_max) {
@@ -29,10 +22,10 @@ bool timeoutPingSend = false;
 #define PING_AFTER_IDLE_MS    2500
 #define TIMEOUT_AFTER_IDLE_MS 5000
 
-// wheel collection time
-#define MARK_TIME 200
+// wheel collection time, needed cause of undeterministic approch of /eos/out/wheel/
+#define COLLECT_TIME 250
 
-// shift, accelaration and 2nd/3rd variables
+// shift, accelaration and 2nd/3rd global variables
 bool shiftState = false;
 bool accelerationState = false;
 uint8_t intensTick = 8;
@@ -1784,24 +1777,16 @@ void SelectParameter::update(bool stateUp, bool stateDown) {
  ******************************************************************************/
 
 SelectCategory::SelectCategory(uint8_t pinIntens, uint8_t pinFocus, uint8_t pinColor, uint8_t pinImage, uint8_t pinForm, uint8_t pinShutter, uint8_t encoders) {
-	this->pinIntens = pinIntens;
-	pinMode(pinIntens, INPUT_PULLUP);
-	pinIntensLast = digitalRead(pinIntens);
-	this->pinFocus = pinFocus;
-	pinMode(pinFocus, INPUT_PULLUP);
-	pinFocusLast = digitalRead(pinFocus);
-	this->pinColor = pinColor;
-	pinMode(pinColor, INPUT_PULLUP);
-	pinColorLast = digitalRead(pinColor);
-	this->pinImage = pinImage;
-	pinMode(pinImage, INPUT_PULLUP);
-	pinImageLast = digitalRead(pinImage);
-	this->pinForm = pinForm;
-	pinMode(pinForm, INPUT_PULLUP);
-	pinFormLast = digitalRead(pinForm);
-	this->pinShutter = pinShutter;
-	pinMode(pinShutter, INPUT_PULLUP);
-	pinShutterLast = digitalRead(pinShutter);
+	pins[0] = pinIntens;
+	pins[1] = pinFocus;
+	pins[2] = pinColor;
+	pins[3] = pinImage;
+	pins[4] = pinForm;
+	pins[5] = pinShutter;
+	for (uint8_t i = 0; i < 6; i++) {
+		pinMode(pins[i], INPUT_PULLUP);
+		pinsLast[i] = digitalRead(pins[i]);
+		}
 	this->encoders = encoders;
 	idx = new int [encoders];
 	for (uint8_t i = 0; i < encoders; i++) idx[i] = i;
@@ -1823,12 +1808,12 @@ void SelectCategory::parameter(category_t category, string parameter, string ali
 	add.value = 0.0f;
 	add.wheel = 0;
 	param[category].push_back(add);
-	categoryData[category].parameterCount = param[category].size();
+	categoryData[category].parameters = param[category].size();
 	categoryData[category].currentPage = 1;
-	categoryData[category].pagesCount = 1;
-	if (categoryData[category].parameterCount > encoders) {
-		categoryData[category].pagesCount = categoryData[category].parameterCount / encoders;
-		if (categoryData[category].parameterCount % encoders) categoryData[category].pagesCount++;
+	categoryData[category].pages = 1;
+	if (categoryData[category].parameters > encoders) {
+		categoryData[category].pages = categoryData[category].parameters / encoders;
+		if (categoryData[category].parameters % encoders) categoryData[category].pages++;
 		}
 	}
 
@@ -1842,14 +1827,13 @@ uint8_t SelectCategory::parse() {
 		string parameter = osc.getString(1).substr(0, osc.getString(1).rfind('[') - 2);
 		uint8_t category = osc.getInt(2);
 		if (category == 0) {
-			for (uint8_t k = 0; k < 6; k++) {
-				for (int i = 0; i < categoryData[k].parameterCount; i++) {
+			for (int k = 0; k < 6; k++) {
+				for (int i = 0; i < categoryData[k].parameters; i++) {
 					if (param[k][i].wheel == wheel) {
 						param[k][i].value = 0.0f;
 						param[k][i].wheel = 0;
 						param[k][i].active = false;
-						for (uint8_t j = 0; j < encoders; j++) {
-							//if (i == idx[j] && k == currentCategory) return j + 1;
+						for (int j = 0; j < encoders; j++) {
 							if (i == idx[j]) return j + 1;
 							}
 						}
@@ -1858,32 +1842,26 @@ uint8_t SelectCategory::parse() {
 			return 0;
 			}
 		
-		for (uint8_t k = 0; k < 6; k++) {
-			for (int i = 0; i < categoryData[k].parameterCount; i++) {
+		for (int k = 0; k < 6; k++) {
+			for (int i = 0; i < categoryData[k].parameters; i++) {
 				if (parameter != param[k][i].parameter && param[k][i].wheel == wheel) {
 					param[k][i].value = 0.0f;
 					param[k][i].wheel = 0;
 					param[k][i].active = false;
-					//for (uint8_t j = 0; j < encoders; j++) {
-						//if (i == idx[j] && k == currentCategory) return j + 1;
-						//if (i == idx[j]) return j + 1;
-					//	}
 					}
 				}	
 			}
 		
-		for (int i = 0; i < categoryData[category - 1].parameterCount; i++) {
+		for (int i = 0; i < categoryData[category - 1].parameters; i++) {
 			if (param[category - 1][i].parameter == parameter) {
 				param[category - 1][i].value = osc.getFloat(3);
 				param[category - 1][i].wheel = wheel;
 				param[category - 1][i].active = true;
-				for (uint8_t j = 0; j < encoders; j++) {
-					//if (i == idx[j] && (category - 1 == currentCategory)) return j + 1;
+				for (int j = 0; j < encoders; j++) {
 					if (i == idx[j]) return j + 1;
 					}
 				}
 			}
-		
 		}	
 	return 0;
 	}
@@ -1891,8 +1869,10 @@ uint8_t SelectCategory::parse() {
 string SelectCategory::parameter(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return "";
 	if (encoder > 0 && encoder <= encoders) {
-		if (categoryData[currentCategory].parameterCount > 0)
+		if (categoryData[currentCategory].parameters > 0) {
+			if (param[currentCategory][idx[encoder - 1]].alias.size()) return param[currentCategory][idx[encoder - 1]].alias;
 			return param[currentCategory][idx[encoder - 1]].parameter;
+			}
 		}
 	return "";
 	}
@@ -1900,7 +1880,7 @@ string SelectCategory::parameter(uint8_t encoder) {
 string SelectCategory::alias(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return "";
 	if (encoder > 0 && encoder <= encoders) {
-		if (categoryData[currentCategory].parameterCount > 0)
+		if (categoryData[currentCategory].parameters > 0)
 			return param[currentCategory][idx[encoder - 1]].alias;
 		}
 	return "";
@@ -1909,7 +1889,7 @@ string SelectCategory::alias(uint8_t encoder) {
 float SelectCategory::value(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return 0.0f;
 	if (encoder > 0 && encoder <= encoders) {
-		if (categoryData[currentCategory].parameterCount > 0)
+		if (categoryData[currentCategory].parameters > 0)
 			return param[currentCategory][idx[encoder - 1]].value;
 		}
 	return 0.0f;
@@ -1918,7 +1898,7 @@ float SelectCategory::value(uint8_t encoder) {
 bool SelectCategory::active(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return false;
 	if (encoder > 0 && encoder <= encoders) {
-		if (categoryData[currentCategory].parameterCount > 0)
+		if (categoryData[currentCategory].parameters > 0)
 			return param[currentCategory][idx[encoder - 1]].active;
 		}
 	return false;
@@ -1927,7 +1907,7 @@ bool SelectCategory::active(uint8_t encoder) {
 void SelectCategory::indexEncoder(category_t category) {
 	for (uint8_t i = 0; i < encoders; i++) {
 		idx[i] = ((categoryData[category].currentPage - 1) * encoders) + i;
-		if (idx[i] >= categoryData[category].parameterCount) idx[i] = -1;
+		if (idx[i] >= categoryData[category].parameters) idx[i] = -1;
 		}
 	if (call != nullptr) call();
 	}
@@ -1959,7 +1939,7 @@ uint8_t SelectCategory::page() {
 	}
 
 uint8_t SelectCategory::pages() {
-	return categoryData[currentCategory].pagesCount;
+	return categoryData[currentCategory].pages;
 	}
 
 uint8_t SelectCategory::page(category_t category) {
@@ -1967,305 +1947,88 @@ uint8_t SelectCategory::page(category_t category) {
 	}
 
 uint8_t SelectCategory::pages(category_t category) {
-	return categoryData[category].pagesCount;
+	return categoryData[category].pages;
 	}
 
 uint8_t SelectCategory::count(category_t category) {
-	return categoryData[category].parameterCount;
+	return categoryData[category].parameters;
 	}
 
 void SelectCategory::update() {
 	if (state2nd || state3rd) return;
-	if (digitalRead(pinIntens) != pinIntensLast) {
-		if (pinIntensLast == false) {
-			pinIntensLast = true;
-			}
-		else {
-			pinIntensLast = false;
-			currentCategory = INTENSITY;
-			if (lastCategory != INTENSITY) {
-				lastCategory = INTENSITY;
+	for (uint8_t i = 0; i < 6; i++) {
+		if (digitalRead(pins[i]) != pinsLast[i]) {
+			if (pinsLast[i] == false) {
+				pinsLast[i] = true;
 				}
 			else {
-				if (categoryData[INTENSITY].pagesCount == 0) return;
-				if (categoryData[INTENSITY].currentPage < categoryData[INTENSITY].pagesCount) {
-					categoryData[INTENSITY].currentPage++;
+				pinsLast[i] = false;
+				currentCategory = (category_t)i;
+				if (lastCategory != (category_t)i) {
+					lastCategory = (category_t)i;
 					}
 				else {
-					categoryData[INTENSITY].currentPage = 1;
+					if (categoryData[(category_t)i].pages == 0) return;
+					if (categoryData[(category_t)i].currentPage < categoryData[(category_t)i].pages) {
+						categoryData[(category_t)i].currentPage++;
+						}
+					else {
+						categoryData[(category_t)i].currentPage = 1;
+						}
 					}
+				indexEncoder((category_t)i);
 				}
-			indexEncoder(INTENSITY);
+			return;
 			}
-		return;
-		}
-
-	if (digitalRead(pinFocus) != pinFocusLast) {
-		if (pinFocusLast == false) {
-			pinFocusLast = true;
-			}
-		else {
-			pinFocusLast = false;
-			currentCategory = FOCUS;
-			if (lastCategory != FOCUS) {
-				lastCategory = FOCUS;
-				}
-			else {
-				if (categoryData[FOCUS].pagesCount == 0) return;
-				if (categoryData[FOCUS].currentPage < categoryData[FOCUS].pagesCount) {
-					categoryData[FOCUS].currentPage++;
-					}
-				else {
-					categoryData[FOCUS].currentPage = 1;
-					}
-				}
-			indexEncoder(FOCUS);
-			}
-		return;
-		}
-
-	if (digitalRead(pinColor) != pinColorLast) {
-		if (pinColorLast == false) {
-			pinColorLast = true;
-			}
-		else {
-			pinColorLast = false;
-			currentCategory = COLOR;
-			if (lastCategory != COLOR) {
-				lastCategory = COLOR;
-				}
-			else {
-				if (categoryData[COLOR].pagesCount == 0) return;
-				if (categoryData[COLOR].currentPage < categoryData[COLOR].pagesCount) {
-					categoryData[COLOR].currentPage++;
-					}
-				else {
-					categoryData[COLOR].currentPage = 1;
-					}
-				}
-			indexEncoder(COLOR);
-			}
-		return;
-		}
-
-	if (digitalRead(pinImage) != pinImageLast) {
-		if (pinImageLast == false) {
-			pinImageLast = true;
-			}
-		else {
-			pinImageLast = false;
-			currentCategory = IMAGE;
-			if (lastCategory != IMAGE) {
-				lastCategory = IMAGE;
-				}
-			else {
-				if (categoryData[IMAGE].pagesCount == 0) return;
-				if (categoryData[IMAGE].currentPage < categoryData[IMAGE].pagesCount) {
-					categoryData[IMAGE].currentPage++;
-					}
-				else {
-					categoryData[IMAGE].currentPage = 1;
-					}
-				}
-			indexEncoder(IMAGE);
-			}
-		return;
-		}
-
-	if (digitalRead(pinForm) != pinFormLast) {
-		if (pinFormLast == false) {
-			pinFormLast = true;
-			}
-		else {
-			pinFormLast = false;
-			currentCategory = FORM;
-			if (lastCategory != FORM) {
-				lastCategory = FORM;
-				}
-			else {
-				if (categoryData[FORM].pagesCount == 0) return;
-				if (categoryData[FORM].currentPage < categoryData[FORM].pagesCount) {
-					categoryData[FORM].currentPage++;
-					}
-				else {
-					categoryData[FORM].currentPage = 1;
-					}
-				}
-			indexEncoder(FORM);
-			}
-		return;
-		}
-
-	if (digitalRead(pinShutter) != pinShutterLast) {
-		if (pinShutterLast == false) {
-			pinShutterLast = true;
-			}
-		else {
-			pinShutterLast = false;
-			currentCategory = SHUTTER;
-			if (lastCategory != SHUTTER) {
-				lastCategory = SHUTTER;
-				}
-			else {
-				if (categoryData[SHUTTER].pagesCount == 0) return;
-				if (categoryData[SHUTTER].currentPage < categoryData[SHUTTER].pagesCount) {
-					categoryData[SHUTTER].currentPage++;
-					}
-				else {
-					categoryData[SHUTTER].currentPage = 1;
-					}
-				}
-			indexEncoder(SHUTTER);
-			}
-		return;
 		}
 	}
 
 void SelectCategory::update(bool stateIntens, bool stateFocus, bool stateColor, bool stateImage, bool stateForm, bool stateShutter) {
 	if (state2nd || state3rd) return;
-	if (stateIntens == pinIntensLast) {
-		if (pinIntensLast == false) {
-			pinIntensLast = true;
-			}
-		else {
-			pinIntensLast = false;
-			currentCategory = INTENSITY;
-			if (lastCategory != INTENSITY) {
-				lastCategory = INTENSITY;
+	bool states[6] {stateIntens, stateFocus, stateColor, stateImage, stateForm, stateShutter}; 
+	for (uint8_t i = 0; i < 6; i++) {
+		if (states[i] == pinsLast[i]) {
+			if (pinsLast[i] == false) {
+				pinsLast[i] = true;
 				}
 			else {
-				if (categoryData[INTENSITY].pagesCount == 0) return;
-				if (categoryData[INTENSITY].currentPage < categoryData[INTENSITY].pagesCount) {
-					categoryData[INTENSITY].currentPage++;
+				pinsLast[i] = false;
+				currentCategory = (category_t)i;
+				if (lastCategory != (category_t)i) {
+					lastCategory = (category_t)i;
 					}
 				else {
-					categoryData[INTENSITY].currentPage = 1;
+					if (categoryData[(category_t)i].pages == 0) return;
+					if (categoryData[(category_t)i].currentPage < categoryData[(category_t)i].pages) {
+						categoryData[(category_t)i].currentPage++;
+						}
+					else {
+						categoryData[(category_t)i].currentPage = 1;
+						}
 					}
+				indexEncoder((category_t)i);
 				}
-			indexEncoder(INTENSITY);
+			return;
 			}
-		return;
 		}
+	}
 
-	if (stateFocus == pinFocusLast) {
-		if (pinFocusLast == false) {
-			pinFocusLast = true;
+void SelectCategory::update(category_t category) {
+	if (state2nd || state3rd) return;
+	currentCategory = category;
+	if (lastCategory != category) {
+		lastCategory = category;
+		}
+	else {
+		if (categoryData[category].pages == 0) return;
+		if (categoryData[category].currentPage < categoryData[category].pages) {
+			categoryData[category].currentPage++;
 			}
 		else {
-			pinFocusLast = false;
-			currentCategory = FOCUS;
-			if (lastCategory != FOCUS) {
-				lastCategory = FOCUS;
-				}
-			else {
-				if (categoryData[FOCUS].pagesCount == 0) return;
-				if (categoryData[FOCUS].currentPage < categoryData[FOCUS].pagesCount) {
-					categoryData[FOCUS].currentPage++;
-					}
-				else {
-					categoryData[FOCUS].currentPage = 1;
-					}
-				}
-			indexEncoder(FOCUS);
+			categoryData[category].currentPage = 1;
 			}
-		return;
 		}
-
-	if (stateColor == pinColorLast) {
-		if (pinColorLast == false) {
-			pinColorLast = true;
-			}
-		else {
-			pinColorLast = false;
-			currentCategory = COLOR;
-			if (lastCategory != COLOR) {
-				lastCategory = COLOR;
-				}
-			else {
-				if (categoryData[COLOR].pagesCount == 0) return;
-				if (categoryData[COLOR].currentPage < categoryData[COLOR].pagesCount) {
-					categoryData[COLOR].currentPage++;
-					}
-				else {
-					categoryData[COLOR].currentPage = 1;
-					}
-				}
-			indexEncoder(COLOR);
-			}
-		return;
-		}
-
-	if (stateImage == pinImageLast) {
-		if (pinImageLast == false) {
-			pinImageLast = true;
-			}
-		else {
-			pinImageLast = false;
-			currentCategory = IMAGE;
-			if (lastCategory != IMAGE) {
-				lastCategory = IMAGE;
-				}
-			else {
-				if (categoryData[IMAGE].pagesCount == 0) return;
-				if (categoryData[IMAGE].currentPage < categoryData[IMAGE].pagesCount) {
-					categoryData[IMAGE].currentPage++;
-					}
-				else {
-					categoryData[IMAGE].currentPage = 1;
-					}
-				}
-			indexEncoder(IMAGE);
-			}
-		return;
-		}
-
-	if (stateForm == pinFormLast) {
-		if (pinFormLast == false) {
-			pinFormLast = true;
-			}
-		else {
-			pinFormLast = false;
-			currentCategory = FORM;
-			if (lastCategory != FORM) {
-				lastCategory = FORM;
-				}
-			else {
-				if (categoryData[FORM].pagesCount == 0) return;
-				if (categoryData[FORM].currentPage < categoryData[FORM].pagesCount) {
-					categoryData[FORM].currentPage++;
-					}
-				else {
-					categoryData[FORM].currentPage = 1;
-					}
-				}
-			indexEncoder(FORM);
-			}
-		return;
-		}
-
-	if (stateShutter != pinShutterLast) {
-		if (pinShutterLast == false) {
-			pinShutterLast = true;
-			}
-		else {
-			pinShutterLast = false;
-			currentCategory = SHUTTER;
-			if (lastCategory != SHUTTER) {
-				lastCategory = SHUTTER;
-				}
-			else {
-				if (categoryData[SHUTTER].pagesCount == 0) return;
-				if (categoryData[SHUTTER].currentPage < categoryData[SHUTTER].pagesCount) {
-					categoryData[SHUTTER].currentPage++;
-					}
-				else {
-					categoryData[SHUTTER].currentPage = 1;
-					}
-				}
-			indexEncoder(SHUTTER);
-			}
-		return;
-		}
+		indexEncoder(category);
 	}
 
 /*******************************************************************************
@@ -2273,43 +2036,23 @@ void SelectCategory::update(bool stateIntens, bool stateFocus, bool stateColor, 
  ******************************************************************************/
 
 SelectDynamic::SelectDynamic(uint8_t pinIntens, uint8_t pinFocus, uint8_t pinColor, uint8_t pinImage, uint8_t pinForm, uint8_t pinShutter, uint8_t encoders) {
-	this->pinIntens = pinIntens;
-	pinMode(pinIntens, INPUT_PULLUP);
-	pinIntensLast = digitalRead(pinIntens);
-	this->pinFocus = pinFocus;
-	pinMode(pinFocus, INPUT_PULLUP);
-	pinFocusLast = digitalRead(pinFocus);
-	this->pinColor = pinColor;
-	pinMode(pinColor, INPUT_PULLUP);
-	pinColorLast = digitalRead(pinColor);
-	this->pinImage = pinImage;
-	pinMode(pinImage, INPUT_PULLUP);
-	pinImageLast = digitalRead(pinImage);
-	this->pinForm = pinForm;
-	pinMode(pinForm, INPUT_PULLUP);
-	pinFormLast = digitalRead(pinForm);
-	this->pinShutter = pinShutter;
-	pinMode(pinShutter, INPUT_PULLUP);
-	pinShutterLast = digitalRead(pinShutter);
-	this->encoders = encoders;
-	for (uint8_t i = 0; i < WHEELS_MAX; i++) {
-		param[i].category = 0;
-		param[i].wheel = 0;
-		param[i].value = 0.0f;
-		param[i].parameter = "";
+	pins[0] = pinIntens;
+	pins[1] = pinFocus;
+	pins[2] = pinColor;
+	pins[3] = pinImage;
+	pins[4] = pinForm;
+	pins[5] = pinShutter;
+	for (uint8_t i = 0; i < 6; i++) {
+		pinMode(pins[i], INPUT_PULLUP);
+		pinsLast[i] = digitalRead(pins[i]);
 		}
+	this->encoders = encoders;
 	idx = new int [encoders];
-	for (uint8_t i = 0; i < encoders; i++) idx[i] = i;
+	for (uint8_t i = 0; i < encoders; i++) idx[i] = -1;
 	}
 
 SelectDynamic::SelectDynamic(uint8_t encoders) {
 	this->encoders = encoders;
-	for (uint8_t i = 0; i < WHEELS_MAX; i++) {
-		param[i].category = 0;
-		param[i].wheel = 0;
-		param[i].value = 0.0f;
-		param[i].parameter = "";
-		}
 	idx = new int [encoders];
 	for (uint8_t i = 0; i < encoders; i++) idx[i] = i;
 	categoryData[INTENSITY].currentPage = 1;
@@ -2322,9 +2065,25 @@ void SelectDynamic::callback(cbptr call) {
 string SelectDynamic::parameter(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return "";
 	if (encoder > 0 && encoder <= encoders) {
+		if (aliases.size()) {
+			for (size_t i = 0; i < aliases.size(); i++) {
+				if (aliases[i][0].compare(param[idx[encoder - 1]].parameter) == 0) {
+					return aliases[i][1];
+					}
+				}
+			}
 		return param[idx[encoder - 1]].parameter;
 		}
 	return "";
+	}
+
+void SelectDynamic::alias(string parameter, string alias) {
+	aliases.push_back({parameter, alias});
+	}
+
+bool SelectDynamic::active(uint8_t encoder) {
+	if (idx[encoder - 1] == -1) return false;
+	return true;
 	}
 
 uint8_t SelectDynamic::wheel(uint8_t encoder) {
@@ -2343,248 +2102,106 @@ float SelectDynamic::value(uint8_t encoder) {
 	}
 
 void SelectDynamic::indexWheel() {
-	for(uint8_t i = 0; i < 7; i++) {
-		categoryData[i].parameterCount = 0;
+	for(uint8_t i = 0; i < 6; i++) {
+		categoryData[i].parameters = 0;
 		categoryData[i].start = 0;
 		categoryData[i].end = 0;
 		categoryData[i].pages = 0;
-		categoryData[i].currentPage = 1;
+		categoryData[i].currentPage = 0;
 		}
-	int loop = 1;
-	for (; loop < WHEELS_MAX; loop++) {
-		if (param[loop].category == INTENSITY) {
-			++categoryData[INTENSITY].parameterCount;
-			categoryData[INTENSITY].end = loop;
+	size_t loop = 0;
+	for (uint8_t i = 0; i < 6; i++) {
+		for (; loop < param.size(); loop++) {
+			if (param[loop].category == i + 1) {
+				++categoryData[i].parameters;
+				categoryData[i].end = loop;
+				}
+			else break;
 			}
-		else break;
 		}
-	for (; loop < WHEELS_MAX; loop++) {
-		if (param[loop].category == FOCUS) {
-			++categoryData[FOCUS].parameterCount;
-			categoryData[FOCUS].end = loop;
+	for (uint8_t i = 0; i < 6; i++) {
+		if (categoryData[i].parameters == 0) {
+		categoryData[i].start = 0;
+		categoryData[i].pages = 0;
 			}
-		else break;
-		}
-	for (; loop < WHEELS_MAX; loop++) {
-		if (param[loop].category == COLOR) {
-			++categoryData[COLOR].parameterCount;
-			categoryData[COLOR].end = loop;
+		else {
+			categoryData[i].start = categoryData[i].end - categoryData[i].parameters + 1;
+			if (categoryData[i].parameters > encoders) { 
+				if ((categoryData[i].parameters % encoders) == 0) {
+					categoryData[i].pages = categoryData[i].parameters / encoders;
+					}
+				else {
+					categoryData[i].pages = categoryData[i].parameters / encoders + 1;
+					}
+				}
+			else categoryData[i].pages = 1;
 			}
-		else break;
 		}
-	for (; loop < WHEELS_MAX; loop++) {
-		if (param[loop].category == IMAGE) {
-			++categoryData[IMAGE].parameterCount;
-			categoryData[IMAGE].end = loop;
-			}
-		else break;
-		}
-	for (; loop < WHEELS_MAX; loop++) {
-		if (param[loop].category == FORM) {
-			++categoryData[FORM].parameterCount;
-			categoryData[FORM].end = loop;
-			}
-		else break;
-		}
-	for (; loop < WHEELS_MAX; loop++) {
-		if (param[loop].category == SHUTTER) {
-			++categoryData[SHUTTER].parameterCount;
-			categoryData[SHUTTER].end = loop;
-			}
-		else break;
-		}
+	indexCollect();
+	}
 
-	if (categoryData[INTENSITY].parameterCount == 0) {
-		categoryData[INTENSITY].start = 0;
-		categoryData[INTENSITY].pages = 0;
+void SelectDynamic::indexCollect() {
+	for (uint8_t i = 0; i < 6; i++) {
+		if (categoryData[i].parameters)
+			categoryData[i].currentPage = 1;
+		else categoryData[i].currentPage = 0;
+	}
+	if (categoryData[currentCategory].parameters) {
+		for (uint8_t i = 0; i < encoders; i++) {
+			int wheel = categoryData[currentCategory].start + i;
+			wheel = wheel + encoders * (categoryData[currentCategory].currentPage - 1);
+			if (wheel > categoryData[currentCategory].end) wheel = -1;
+			idx[i] = wheel;
+			}
 		}
 	else {
-		categoryData[INTENSITY].start = categoryData[INTENSITY].end - categoryData[INTENSITY].parameterCount + 1;
-		if (categoryData[INTENSITY].parameterCount > encoders) { 
-			if ((categoryData[INTENSITY].parameterCount % encoders) == 0) {
-				categoryData[INTENSITY].pages = categoryData[INTENSITY].parameterCount / encoders;
-				}
-			else {
-				categoryData[INTENSITY].pages = categoryData[INTENSITY].parameterCount / encoders + 1;
-				}
+		for (uint8_t i = 0; i < encoders; i++) {
+			idx[i] = -1;
 			}
-		else categoryData[INTENSITY].pages = 1;
 		}
-
-	if (categoryData[FOCUS].parameterCount == 0) {
-		categoryData[FOCUS].start = 0;
-		categoryData[FOCUS].pages = 0;
-		}
-	else {
-		categoryData[FOCUS].start = categoryData[FOCUS].end - categoryData[FOCUS].parameterCount + 1;
-		if (categoryData[FOCUS].parameterCount > encoders) {
-			if ((categoryData[FOCUS].parameterCount % encoders) == 0) {
-				categoryData[FOCUS].pages = categoryData[FOCUS].parameterCount / encoders;
-				}
-			else {
-				categoryData[FOCUS].pages = categoryData[FOCUS].parameterCount / encoders + 1;
-				}
-			}
-		else categoryData[FOCUS].pages = 1;
-		}
-
-	if (categoryData[COLOR].parameterCount == 0) {
-		categoryData[COLOR].start = 0;
-		categoryData[COLOR].pages = 0;
-		}
-	else {
-		categoryData[COLOR].start = categoryData[COLOR].end - categoryData[COLOR].parameterCount + 1;
-		if (categoryData[COLOR].parameterCount > encoders) {
-			if ((categoryData[COLOR].parameterCount % encoders) == 0) {
-				categoryData[COLOR].pages = categoryData[COLOR].parameterCount / encoders;
-				}
-			else {
-				categoryData[COLOR].pages = categoryData[COLOR].parameterCount / encoders + 1;
-				}
-			}
-		else categoryData[COLOR].pages = 1;
-		}
-
-	if (categoryData[IMAGE].parameterCount == 0) {
-		categoryData[IMAGE].start = 0;
-		categoryData[IMAGE].pages = 0;
-		}
-	else {
-		categoryData[IMAGE].start = categoryData[IMAGE].end - categoryData[IMAGE].parameterCount + 1;
-		if (categoryData[IMAGE].parameterCount > encoders) {
-			if ((categoryData[IMAGE].parameterCount % encoders) == 0) {
-				categoryData[IMAGE].pages = categoryData[IMAGE].parameterCount / encoders;
-				}
-			else {
-				categoryData[IMAGE].pages = categoryData[IMAGE].parameterCount / encoders + 1;
-				}
-			}
-		else categoryData[IMAGE].pages = 1;
-		}
-
-	if (categoryData[FORM].parameterCount == 0) {
-		categoryData[FORM].start = 0;
-		categoryData[FORM].pages = 0;
-		}
-	else {
-		categoryData[FORM].start = categoryData[FORM].end - categoryData[FORM].parameterCount + 1;
-		if (categoryData[FORM].parameterCount > encoders) {
-			if ((categoryData[FORM].parameterCount % encoders) == 0) {
-				categoryData[FORM].pages = categoryData[FORM].parameterCount / encoders;
-				}
-			else {
-				categoryData[FORM].pages = categoryData[FORM].parameterCount / encoders + 1;
-				}
-			}
-		else categoryData[FORM].pages = 1;
-		}
-
-	if (categoryData[SHUTTER].parameterCount == 0) {
-		categoryData[SHUTTER].start = 0;
-		categoryData[SHUTTER].pages = 0;
-		}
-	else {
-		categoryData[SHUTTER].start = categoryData[SHUTTER].end - categoryData[SHUTTER].parameterCount + 1;
-		if (categoryData[SHUTTER].parameterCount > encoders) {
-			if ((categoryData[SHUTTER].parameterCount % encoders) == 0) {
-				categoryData[SHUTTER].pages = categoryData[SHUTTER].parameterCount / encoders;
-				}
-			else {
-				categoryData[SHUTTER].pages = categoryData[SHUTTER].parameterCount / encoders + 1;
-				}
-			}
-		else categoryData[SHUTTER].pages = 1;
-		}
+	if (call != nullptr) call(); // execute callback
 	}
 
 void SelectDynamic::indexEncoder(category_t category) {
 	for (uint8_t i = 0; i < encoders; i++) {
-		if (categoryData[category].parameterCount) {
-			uint8_t wheel = categoryData[category].start + i;
+		if (categoryData[category].parameters) {
+			int wheel = categoryData[category].start + i;
 			wheel = wheel + encoders * (categoryData[category].currentPage - 1);
-			if (wheel > categoryData[category].end) wheel = 0;
+			if (wheel > categoryData[category].end) wheel = -1;
 			idx[i] = wheel;
 			}
-		else idx[i] = -1; // 0 or -1 ?
+		else idx[i] = -1;
 		}
 	if (call != nullptr) call(); // execute callback
 	}
 
 uint8_t SelectDynamic::parse() {
-	// following cases
-	// 0. check if channel selection changed
-	// 1. category is 0 -> reindex after timeout
-	// 2. wheel is not the wheel of the current parameter -> reindex after time out
-	// 3. parameter and wheel is correct -> only update the encoders
-	// 4. parameter is correct but wheel is different -> update data then reindex
-	if (millis() > markTime + MARK_TIME && markFlag == true) {
+	if (osc.getPattern().find("/eos/out/active/wheel/") == 0) {
+		uint16_t wheel = stoi(osc.getPattern().substr(osc.getPattern().rfind('/') + 1));
+		uint8_t category = osc.getInt(2);
+		string parameter = osc.getString(1).substr(0, osc.getString(1).rfind('[') - 2);
+		if (param.size() < wheel) param.resize(wheel);
+		if (parameter.compare(param[wheel - 1].parameter)) {
+			if (markFlag == false) {
+				markFlag = true;
+				collectTime = millis();
+				}
+			}
+		param[wheel - 1].category = category;
+		param[wheel - 1].value = osc.getFloat(3);
+		param[wheel - 1].parameter = parameter;
+		for (uint8_t j = 0; j < encoders; j++) {
+			if (wheel - 1 == idx[j]) return j + 1;
+			}
+		}
+	return 0;
+	}
+
+void SelectDynamic::collect() {
+	if ((millis() >= (collectTime + COLLECT_TIME)) && markFlag == true) {
 		indexWheel();
 		markFlag = false;
 		}
-
-	if (osc.getPattern().find("/eos/out/active/wheel/") == 0) {
-		uint16_t wheel = stoi(osc.getPattern().substr(osc.getPattern().rfind('/') + 1));
-		// TODO vector push_back if wheel > param.size
-		uint8_t category = osc.getInt(2);
-		if (category == 0) {
-			for (int i = 0; i < WHEELS_MAX; i++) {
-				if (param[i].wheel == wheel) {
-					param[i].category = category;
-					param[i].value = 0.0f;
-					param[i].wheel = 0;
-					param[i].parameter = "";
-					
-					if (markFlag == false) {
-						markFlag = true;
-						markTime = millis();
-						return 0;
-						}
-					
-					//for (uint8_t j = 0; j < encoders; j++) {
-					//	if (i == idx[j]) return j + 1;
-					//	}
-					}
-				}
-			return 0;
-			}
-		
-		string parameter = osc.getString(1).substr(0, osc.getString(1).rfind('[') - 2);
-		for (int i = 0; i < WHEELS_MAX; i++) {
-			if (parameter != param[i].parameter && param[i].wheel == wheel) {
-				param[i].category = category;
-				param[i].value = 0.0f;
-				param[i].wheel = 0;
-				param[i].parameter = "";
-				
-				if (markFlag == false) {
-					markFlag = true;
-					markTime = millis();
-					return 0;
-					}
-				
-				//for (uint8_t j = 0; j < encoders; j++) {
-				//	if (i == idx[j]) return j + 1;
-				//	}
-				}
-			if (param[i].parameter == parameter) {
-				param[i].category = category;
-				param[i].value = osc.getFloat(3);
-				param[i].wheel = wheel;
-				param[i].parameter = parameter;
-				/*
-				if (markFlag == false) {
-					markFlag = true;
-					markTime = millis();
-					return 0;
-					}
-				*/
-				for (uint8_t j = 0; j < encoders; j++) {
-					if (i == idx[j]) return j + 1;
-					}
-				}
-			}
-		}
-		return 0;
 	}
 
 category_t SelectDynamic::category() {
@@ -2626,289 +2243,87 @@ uint8_t SelectDynamic::pages(category_t category) {
 }
 
 uint8_t SelectDynamic::count(category_t category) {
-	return categoryData[category].parameterCount;
+	return categoryData[category].parameters;
 }
 
 void SelectDynamic::update() {
+	collect();
 	if (state2nd || state3rd) return;
-	if (digitalRead(pinIntens) != pinIntensLast) {
-		if (pinIntensLast == false) {
-			pinIntensLast = true;
-			}
-		else {
-			pinIntensLast = false;
-			currentCategory = INTENSITY;
-			if (lastCategory != INTENSITY) {
-				lastCategory = INTENSITY;
+		for (uint8_t i = 0; i < 6; i++) {
+		if (digitalRead(pins[i]) != pinsLast[i]) {
+			if (pinsLast[i] == false) {
+				pinsLast[i] = true;
 				}
 			else {
-				if (categoryData[INTENSITY].currentPage < categoryData[INTENSITY].pages) {
-					categoryData[INTENSITY].currentPage++;
+				pinsLast[i] = false;
+				currentCategory = (category_t)i;
+				if (lastCategory != (category_t)i) {
+					lastCategory = (category_t)i;
 					}
 				else {
-					categoryData[INTENSITY].currentPage = 1;
+					if (categoryData[(category_t)i].pages == 0) return;
+					if (categoryData[(category_t)i].currentPage < categoryData[(category_t)i].pages) {
+						categoryData[(category_t)i].currentPage++;
+						}
+					else {
+						categoryData[(category_t)i].currentPage = 1;
+						}
 					}
+				indexEncoder((category_t)i);
 				}
-			indexEncoder(INTENSITY);
+			return;
 			}
-		return;
-		}
-
-	if (digitalRead(pinFocus) != pinFocusLast) {
-		if (pinFocusLast == false) {
-			pinFocusLast = true;
-			}
-		else {
-			pinFocusLast = false;
-			currentCategory = FOCUS;
-			if (lastCategory != FOCUS) {
-				lastCategory = FOCUS;
-				}
-			else {
-				if (categoryData[FOCUS].currentPage < categoryData[FOCUS].pages) {
-					categoryData[FOCUS].currentPage++;
-					}
-				else {
-					categoryData[FOCUS].currentPage = 1;
-					}
-				}
-			indexEncoder(FOCUS);
-			}
-		return;
-		}
-
-	if (digitalRead(pinColor) != pinColorLast) {
-		if (pinColorLast == false) {
-			pinColorLast = true;
-			}
-		else {
-			pinColorLast = false;
-			currentCategory = COLOR;
-			if (lastCategory != COLOR) {
-				lastCategory = COLOR;
-				}
-			else {
-				if (categoryData[COLOR].currentPage < categoryData[COLOR].pages) {
-					categoryData[COLOR].currentPage++;
-					}
-				else {
-					categoryData[COLOR].currentPage = 1;
-					}
-				}
-			indexEncoder(COLOR);
-			}
-		return;
-		}
-
-	if (digitalRead(pinImage) != pinImageLast) {
-		if (pinImageLast == false) {
-			pinImageLast = true;
-			}
-		else {
-			pinImageLast = false;
-			currentCategory = IMAGE;
-			if (lastCategory != IMAGE) {
-				lastCategory = IMAGE;
-				}
-			else {
-				if (categoryData[IMAGE].currentPage < categoryData[IMAGE].pages) {
-					categoryData[IMAGE].currentPage++;
-					}
-				else {
-					categoryData[IMAGE].currentPage = 1;
-					}
-				}
-			indexEncoder(IMAGE);
-			}
-		return;
-		}
-
-	if (digitalRead(pinForm) != pinFormLast) {
-		if (pinFormLast == false) {
-			pinFormLast = true;
-			}
-		else {
-			pinFormLast = false;
-			currentCategory = FORM;
-			if (lastCategory != FORM) {
-				lastCategory = FORM;
-				}
-			else {
-				if (categoryData[FORM].currentPage < categoryData[FORM].pages) {
-					categoryData[FORM].currentPage++;
-					}
-				else {
-					categoryData[FORM].currentPage = 1;
-					}
-				}
-			indexEncoder(FORM);
-			}
-		return;
-		}
-
-	if (digitalRead(pinShutter) != pinShutterLast) {
-		if (pinShutterLast == false) {
-			pinShutterLast = true;
-			}
-		else {
-			pinShutterLast = false;
-			currentCategory = SHUTTER;
-			if (lastCategory != SHUTTER) {
-				lastCategory = SHUTTER;
-				}
-			else {
-				if (categoryData[SHUTTER].currentPage < categoryData[SHUTTER].pages) {
-					categoryData[SHUTTER].currentPage++;
-					}
-				else {
-					categoryData[SHUTTER].currentPage = 1;
-					}
-				}
-			indexEncoder(SHUTTER);
-			}
-		return;
 		}
 	}
 
 void SelectDynamic::update(bool stateIntens, bool stateFocus, bool stateColor, bool stateImage, bool stateForm, bool stateShutter) {
+	collect();
 	if (state2nd || state3rd) return;
-	if (stateIntens != pinIntensLast) {
-		if (pinIntensLast == false) {
-			pinIntensLast = true;
-			currentCategory = INTENSITY;
-			if (lastCategory != INTENSITY) {
-				lastCategory = INTENSITY;
+	bool states[6] {stateIntens, stateFocus, stateColor, stateImage, stateForm, stateShutter}; 
+	for (uint8_t i = 0; i < 6; i++) {
+		if (states[i] == pinsLast[i]) {
+			if (pinsLast[i] == false) {
+				pinsLast[i] = true;
 				}
 			else {
-				if (categoryData[INTENSITY].currentPage < categoryData[INTENSITY].pages) {
-					categoryData[INTENSITY].currentPage++;
+				pinsLast[i] = false;
+				currentCategory = (category_t)i;
+				if (lastCategory != (category_t)i) {
+					lastCategory = (category_t)i;
 					}
 				else {
-					categoryData[INTENSITY].currentPage = 1;
+					if (categoryData[(category_t)i].pages == 0) return;
+					if (categoryData[(category_t)i].currentPage < categoryData[(category_t)i].pages) {
+						categoryData[(category_t)i].currentPage++;
+						}
+					else {
+						categoryData[(category_t)i].currentPage = 1;
+						}
 					}
+				indexEncoder((category_t)i);
 				}
-			indexEncoder(INTENSITY);
+			return;
 			}
-		else {
-			pinIntensLast = false;
-			}
-		return;
 		}
+	}
 
-	if (stateFocus != pinFocusLast) {
-		if (pinFocusLast == false) {
-			pinFocusLast = true;
-			currentCategory = FOCUS;
-			if (lastCategory != FOCUS) {
-				lastCategory = FOCUS;
-				}
-			else {
-				if (categoryData[FOCUS].currentPage < categoryData[FOCUS].pages) {
-					categoryData[FOCUS].currentPage++;
-					}
-				else {
-					categoryData[FOCUS].currentPage = 1;
-					}
-				}
-			indexEncoder(FOCUS);
+void SelectDynamic::update(category_t category) {
+	collect();
+	if (state2nd || state3rd) return;
+	currentCategory = category;
+	if (lastCategory != category) {
+		lastCategory = category;
+		}
+	else {
+		if (categoryData[category].pages == 0) return;
+		if (categoryData[category].currentPage < categoryData[category].pages) {
+			categoryData[category].currentPage++;
 			}
 		else {
-			pinFocusLast = false;
+			categoryData[category].currentPage = 1;
 			}
-		return;
 		}
-
-	if (stateColor != pinColorLast) {
-		if (pinColorLast == false) {
-			pinColorLast = true;
-			currentCategory = COLOR;
-			if (lastCategory != COLOR) {
-				lastCategory = COLOR;
-				}
-			else {
-				if (categoryData[COLOR].currentPage < categoryData[COLOR].pages) {
-					categoryData[COLOR].currentPage++;
-					}
-				else {
-					categoryData[COLOR].currentPage = 1;
-					}
-				}
-			indexEncoder(COLOR);
-			}
-		else {
-			pinColorLast = false;
-			}
-		return;
-		}
-
-	if (stateImage != pinImageLast) {
-		if (pinImageLast == false) {
-			pinImageLast = true;
-			currentCategory = IMAGE;
-			if (lastCategory != IMAGE) {
-				lastCategory = IMAGE;
-				}
-			else {
-				if (categoryData[IMAGE].currentPage < categoryData[IMAGE].pages) {
-					categoryData[IMAGE].currentPage++;
-					}
-				else {
-					categoryData[IMAGE].currentPage = 1;
-					}
-				}
-			indexEncoder(IMAGE);
-			}
-		else {
-			pinImageLast = false;
-			}
-		return;
-		}
-
-	if (stateForm != pinFormLast) {
-		if (pinFormLast == false) {
-			pinFormLast = true;
-			currentCategory = FORM;
-			if (lastCategory != FORM) {
-				lastCategory = FORM;
-				}
-			else {
-				if (categoryData[FORM].currentPage < categoryData[FORM].pages) {
-					categoryData[FORM].currentPage++;
-					}
-				else {
-					categoryData[FORM].currentPage = 1;
-					}
-				}
-			indexEncoder(FORM);
-			}
-		else {
-			pinFormLast = false;
-			}
-		return;
-		}
-
-	if (stateShutter != pinShutterLast) {
-		if (pinShutterLast == false) {
-			pinShutterLast = true;
-			currentCategory = SHUTTER;
-			if (lastCategory != SHUTTER) {
-				lastCategory = SHUTTER;
-				}
-			else {
-				if (categoryData[SHUTTER].currentPage < categoryData[SHUTTER].pages) {
-					categoryData[SHUTTER].currentPage++;
-					}
-				else {
-					categoryData[SHUTTER].currentPage = 1;
-					}
-				}
-			indexEncoder(SHUTTER);
-			}
-		else {
-			pinShutterLast = false;
-			}
-		return;
-		}
+		indexEncoder(category);
 	}
 
 /*******************************************************************************

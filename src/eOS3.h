@@ -18,10 +18,8 @@ eOS3 for arduino by Stefan Staub (c)2026 is licensed under CC BY-NC-SA 4.0
  *   use ANALOG GND instead of the normal GND
  */
 
-// TODO uint32_t lastDebounceTime;
 // TODO fader fetch/lock up/down marker
-// TODO non polling update for category and dyn by category name
-// TODO 2nd -> shift, 3rd -> accelaration
+// TODO 2nd -> shift, 3rd -> accelaration test
 
 #ifndef EOS3_H
 #define EOS3_H
@@ -35,6 +33,7 @@ eOS3 for arduino by Stefan Staub (c)2026 is licensed under CC BY-NC-SA 4.0
 #include "Udp.h"
 #include "Client.h"
 
+#include <cstdint>
 #include <string>
 #include <vector>
 using namespace std;
@@ -50,24 +49,18 @@ const uint8_t ESC_END = 0xDC;
 const uint8_t ESC_ESC = 0xDD;
 
 // sepecial pins
-#define NO_PIN      0xFF // TODO
-#define VIRTUAL_PIN 0xFE // TODO
+#define NO_PIN      0xFF
+#define VIRTUAL_PIN 0xFE
 
 // subscription
 #define SUBSCRIBE   (int32_t)1
 #define UNSUBSCRIBE (int32_t)0
-
-// wheels definitions
-#define WHEELS_MAX  64 // depends on RAM size
 
 // fader definitions
 #define BUTTON_PRESS         (int32_t)1
 #define BUTTON_RELEASE       (int32_t)0
 #define FADER_UPDATE_RATE_MS 40 // update each 40ms
 #define FADER_THRESHOLD      4 // Jitter threshold of the faders
-
-// defines for debounce
-#define DEBOUNCE_DELAY_MS 50
 
 // callback
 typedef void (*cbptr)();
@@ -159,7 +152,6 @@ typedef enum Levels {
  * 
  */
 typedef enum CategoryTypes {
-	//NO_CATEGORY,
 	INTENSITY,
 	FOCUS,
 	COLOR,
@@ -1667,7 +1659,7 @@ class SelectCategory {
 		string categoryName();
 
 		/**
-		 * @brief check for updated selection
+		 * @brief check for updated selection, must done in loop()
 		 * 
 		 * @param stateIntens optional for virtual devices, TRUE if button press
 		 * @param stateFocus optional for virtual devices, TRUE if button press
@@ -1677,29 +1669,26 @@ class SelectCategory {
 		 * @param stateShutter optional for virtual devices, TRUE if button press
 		 */
 		void update();
-		void update(bool stateIntens, bool stateFocus, bool stateColor, bool stateImage, bool stateForm, bool stateShutter);	
+		void update(bool stateIntens, bool stateFocus, bool stateColor, bool stateImage, bool stateForm, bool stateShutter);
+		
+		/**
+		 * @brief force an update for a specific catagory, this should not done in loop()
+		 * 
+		 * @param category 
+		 */
+		void update(category_t category);
 
 	private:
 		void indexEncoder(category_t category);
-		uint8_t pinIntens;
-		uint8_t pinFocus;
-		uint8_t pinColor;
-		uint8_t pinImage;
-		uint8_t pinForm;
-		uint8_t pinShutter;
-		uint8_t pinIntensLast;
-		uint8_t pinFocusLast;
-		uint8_t pinColorLast;
-		uint8_t pinImageLast;
-		uint8_t pinFormLast;
-		uint8_t pinShutterLast;
+		uint8_t pins[6];
+		uint8_t pinsLast[6];
 		uint8_t encoders;
 		category_t currentCategory = INTENSITY;
 		category_t lastCategory = INTENSITY;
 		int *idx;
 		struct Index {
-			int parameterCount;
-			int pagesCount;
+			int parameters;
+			int pages;
 			int currentPage;
 			};
 		struct Index categoryData[6];
@@ -1711,8 +1700,6 @@ class SelectCategory {
 			string alias;
 			};
 		vector<Wheel> param[6];
-		uint8_t pagesCount;
-		uint8_t currentPage;
 		cbptr call = nullptr;
 	};
 
@@ -1738,7 +1725,7 @@ class SelectDynamic {
 		 * @param encoders number of encoders in use
 		 */
 		SelectDynamic(uint8_t pinIntens, uint8_t pinFocus, uint8_t pinColor, uint8_t pinImage, uint8_t pinForm, uint8_t pinShutter, uint8_t encoders);
-		SelectDynamic( uint8_t encoders);
+		SelectDynamic(uint8_t encoders);
 
 		/**
 		 * @brief Get the name of a parameter by encoder
@@ -1747,6 +1734,23 @@ class SelectDynamic {
 		 * @return const char* 
 		 */
 		string parameter(uint8_t encoder);
+
+		/**
+		 * @brief Add an alias for parameter names
+		 * 
+		 * @param parameter name to replace
+		 * @param alias new alais name
+		 */
+		void alias(string parameter, string alias);
+
+		/**
+		 * @brief Get the information if there are data on a specific encoder wheel
+		 * 
+		 * @param encoder 
+		 * @return true if the encoder have values
+		 * @return false if not
+		 */
+		bool active(uint8_t encoder); // if (idx[encoder] == -1) return false else true;
 
 		/**
 		 * @brief Get the wheel number by encoder
@@ -1842,46 +1846,81 @@ class SelectDynamic {
 		void update();
 		void update(bool stateIntens, bool stateFocus, bool stateColor, bool stateImage, bool stateForm, bool stateShutter);
 
+		/**
+		 * @brief force an update for a specific catagory, this should not done in loop()
+		 * 
+		 * @param category 
+		 */
+		void update(category_t category);
+
 	private:
 		void indexWheel();
-		void indexWheel2();
 		void indexEncoder(category_t category);
-		uint8_t pinIntens;
-		uint8_t pinFocus;
-		uint8_t pinColor;
-		uint8_t pinImage;
-		uint8_t pinForm;
-		uint8_t pinShutter;
-		uint8_t pinIntensLast;
-		uint8_t pinFocusLast;
-		uint8_t pinColorLast;
-		uint8_t pinImageLast;
-		uint8_t pinFormLast;
-		uint8_t pinShutterLast;
+		void collect();
+		void indexCollect();
+		uint8_t pins[6];
+		uint8_t pinsLast[6];
 		uint8_t encoders;
 		int *idx;
 		category_t currentCategory = INTENSITY;
 		category_t lastCategory = INTENSITY;
 		bool markFlag;
-		uint32_t markTime;
+		uint32_t collectTime;
 		string select;
 		string selectLast;
 		struct Index {
-			uint8_t parameterCount;
+			uint8_t parameters;
 			uint8_t start;
 			uint8_t end;
 			uint8_t pages;
 			uint8_t currentPage;
 			};
-		struct Index categoryData[7];
+		struct Index categoryData[6];
 		struct Wheel {
-			uint8_t wheel;
 			uint8_t category;
 			float value;
 			string parameter;
 			};
-		struct Wheel param[WHEELS_MAX];
-		//vector<Wheel> paran;
+		vector<Wheel> param;
+		// TODO fill list
+		vector<vector<string>> aliases;
+			/*
+			 = {
+			{"Intensity Mode", "Int Mode"},
+			{"Intensity Macros", "Macros"},
+			{"Intensity Macro Rate", "MacroRate"},
+			{"Intensity Macro Crossfade Rate", "MacroR X"},
+			{"Position MSpeed", "Pos MSpd"},
+			{"Position Blink", "Blink"},
+			{"Color Select", "Color Sel"},
+			{"Color Mix Mode", "Color MM"},
+			{"Gobo Index/Speed", "Gobo I/S"},
+			{"Gobo Select", "Gobo Sel"},
+			{"Gobo Index/Speed 2", "Gobo2 I/S"},
+			{"Gobo Select 2", "Gobo2 Sel"},
+			{"Beam Fx Index/Speed", "BeamFx I/S"},
+			{"Beam Fx Select", "BeamFx Sel"},
+			{"Animation Select", "Anim Sel"},
+			{"Effect Macros", "FX Macros"},
+			{"Shutter Strobe", "Strobe"},
+			{"Beam MSpeed", "Beam MSpd"},
+			{"Edge Distance", "Edge Dist"},
+			{"Global MSpeed", "G MSpeed"},
+			{"LED Engine Effect Rate", "LedFX Rate"},
+			{"LED Engine Effect Level", "LedFX Lev"},
+			{"Light Diffusion", "Light Diff"},
+			{"Frame Thrust A", "Frame A"},
+			{"Frame Angle A", "Angle A"},
+			{"Frame Thrust C", "Frame C"},
+			{"Frame Angle C", "Angle C"},
+			{"Frame Thrust B", "Frame B"},
+			{"Frame Angle B", "Angle B"},
+			{"Frame Thrust D", "Frame D"},
+			{"Frame Angle D", "Angle D"},
+			{"Frame Assembly", "Assembly"},
+			{"", ""},
+			};
+			*/
 		cbptr call = nullptr;
 	};
 

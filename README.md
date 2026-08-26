@@ -1,9 +1,9 @@
 # eOS3 for ETC EOS Family (v3.1 and later) using OSC over USB and Ethernet/WLAN with UDP/TCP
-This is a new library for EOS v3.x and it is written from scratch.<br>
+This is a new Arduino Framework for EOS v3.x, it is written from scratch and replaces the old eOS library.<br>
 Most improvements are
 
 - Using my own OSC implementation
-- 2nd layer for additional button functions
+- 2nd/3rd layer for additional button functions
 - Virtual inputs for external I/O and A/D expanders and touchscreens
 - Fader page handling and parser
 - DS page handling and parser
@@ -38,7 +38,7 @@ You can import the .zip file from the IDE with *Sketch / Include Library / Add .
 3. For PlatformIO Unzip and move the folder to the lib folder of your project.
 
 ## Library
-The library itself use the `std::string` and `std::vector` C++ library to make it more portable to other OS like mBed-CE<br>
+The library itself use the `std::string` and `std::vector` C++ library so only modern Microcontrollers which enough RAM and C++ Standard Libraries are supported<br>
 Therefore you must use `.c_str()` functionality to convert it to conventional char arrays<br>
 Recommanded libraries for your projects
 - Ethernet
@@ -59,6 +59,7 @@ Recommanded libraries for your projects
 ## IDE's
 
 - VS Code with PlatformIO [https://platformio.org](https://platformio.org) is the a recommanded IDE
+- As an alternative TODO
 - VS Code with "Arduino Maker Workshop" Plugin https://marketplace.visualstudio.com/items?itemName=TheLastOutpostWorkshop.arduino-maker-workshop
 - Arduino IDE 2.x [https://www.arduino.cc/en/software](https://www.arduino.cc/en/software)
 
