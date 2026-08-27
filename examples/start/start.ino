@@ -52,7 +52,7 @@ void setup() {
 	// put your setup code here, to run once
 
 	// initialise connection
-	eos.init(); // for USB connection
+	eos.begin(); // for USB connection
 
 	}
 

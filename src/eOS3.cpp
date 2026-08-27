@@ -1876,7 +1876,7 @@ string SelectCategory::parameter(uint8_t encoder) {
 		}
 	return "";
 	}
-
+// TODO delete
 string SelectCategory::alias(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return "";
 	if (encoder > 0 && encoder <= encoders) {

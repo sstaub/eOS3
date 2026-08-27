@@ -1882,45 +1882,7 @@ class SelectDynamic {
 			string parameter;
 			};
 		vector<Wheel> param;
-		// TODO fill list
 		vector<vector<string>> aliases;
-			/*
-			 = {
-			{"Intensity Mode", "Int Mode"},
-			{"Intensity Macros", "Macros"},
-			{"Intensity Macro Rate", "MacroRate"},
-			{"Intensity Macro Crossfade Rate", "MacroR X"},
-			{"Position MSpeed", "Pos MSpd"},
-			{"Position Blink", "Blink"},
-			{"Color Select", "Color Sel"},
-			{"Color Mix Mode", "Color MM"},
-			{"Gobo Index/Speed", "Gobo I/S"},
-			{"Gobo Select", "Gobo Sel"},
-			{"Gobo Index/Speed 2", "Gobo2 I/S"},
-			{"Gobo Select 2", "Gobo2 Sel"},
-			{"Beam Fx Index/Speed", "BeamFx I/S"},
-			{"Beam Fx Select", "BeamFx Sel"},
-			{"Animation Select", "Anim Sel"},
-			{"Effect Macros", "FX Macros"},
-			{"Shutter Strobe", "Strobe"},
-			{"Beam MSpeed", "Beam MSpd"},
-			{"Edge Distance", "Edge Dist"},
-			{"Global MSpeed", "G MSpeed"},
-			{"LED Engine Effect Rate", "LedFX Rate"},
-			{"LED Engine Effect Level", "LedFX Lev"},
-			{"Light Diffusion", "Light Diff"},
-			{"Frame Thrust A", "Frame A"},
-			{"Frame Angle A", "Angle A"},
-			{"Frame Thrust C", "Frame C"},
-			{"Frame Angle C", "Angle C"},
-			{"Frame Thrust B", "Frame B"},
-			{"Frame Angle B", "Angle B"},
-			{"Frame Thrust D", "Frame D"},
-			{"Frame Angle D", "Angle D"},
-			{"Frame Assembly", "Assembly"},
-			{"", ""},
-			};
-			*/
 		cbptr call = nullptr;
 	};
 

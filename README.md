@@ -1,7 +1,6 @@
 # eOS3 for ETC EOS Family (v3.1 and later) using OSC over USB and Ethernet/WLAN with UDP/TCP
 This is a new Arduino Framework for EOS v3.x, it is written from scratch and replaces the old eOS library.<br>
 Most improvements are
-
 - Using my own OSC implementation
 - 2nd/3rd layer for additional button functions
 - Virtual inputs for external I/O and A/D expanders and touchscreens
@@ -17,9 +16,6 @@ eOS3 is an object orientated library for Arduino to control ETCs EOS Family Cons
 The library support hardware elements like encoders, fader, buttons with some helper functions. The library allows you to use hardware elements as an object and with the use of the helper functions, code becomes much easier to write and read and to understand.<br>
 Please refer to the EOS manual for more information about OSC.<br>
 If you have wishes for other functions or classes use the discussion tab. If you find bugs make an issue, nobody is perfect.
-
-**!!! This library is licensed under CC BY-NC-SA 4.0 [https://creativecommons.org/licenses/by-nc-sa/4.0/](https://creativecommons.org/licenses/by-nc-sa/4.0/)<br>
-For commercial use a license is needed !!!**
 
 ## eOS3
 The new main class is `eOS3`.
@@ -37,9 +33,17 @@ when a connection failed
 You can import the .zip file from the IDE with *Sketch / Include Library / Add .ZIP Library...*
 3. For PlatformIO Unzip and move the folder to the lib folder of your project.
 
+## Examples
+There are differnet examples available.
+- 
+
+
 ## Library
+I used the Raspberry Pi Pico 2 for development, let me know if there are 
+problem with other borads / microcontrollers.<br>
 The library itself use the `std::string` and `std::vector` C++ library so only modern Microcontrollers which enough RAM and C++ Standard Libraries are supported<br>
 Therefore you must use `.c_str()` functionality to convert it to conventional char arrays<br>
+
 Recommanded libraries for your projects
 - Ethernet
 	- Ethernet3 https://github.com/sstaub/Ethernet3 for WIZnet 5500 chips with MAC support for Pico
@@ -48,8 +52,9 @@ Recommanded libraries for your projects
 - LCD Displays
 	- HD44780 https://github.com/sstaub/LCD-HD44780
 	- HD44780 with I2C https://github.com/sstaub/LCD-I2C-HD44780
-- Touchscreen
-- - NextionX2 https://github.com/sstaub/NextionX2 for Nextion Touchscreens
+- Touchscreen Nextion
+	- https://nextion.tech
+	- NextionX3 https://github.com/sstaub/NextionX3 for Nextion Touchscreens
 - I/O Expanders
 	- A/D MCP3208 (SPI) https://github.com/sstaub/MCP_3208
 	- I/O MCP23017 (I2C) https://github.com/sstaub/MCP_23017
@@ -59,8 +64,9 @@ Recommanded libraries for your projects
 ## IDE's
 
 - VS Code with PlatformIO [https://platformio.org](https://platformio.org) is the a recommanded IDE
-- As an alternative TODO
-- VS Code with "Arduino Maker Workshop" Plugin https://marketplace.visualstudio.com/items?itemName=TheLastOutpostWorkshop.arduino-maker-workshop
+- VS Code with "pioarduino" extension which allows clang support
+- VS Code with "Arduino Maker Workshop" extension
+- You could try also the Theia IDE [https://theia-ide.org](https://theia-ide.org)
 - Arduino IDE 2.x [https://www.arduino.cc/en/software](https://www.arduino.cc/en/software)
 
 ## Boards
@@ -68,15 +74,15 @@ Recommanded libraries for your projects
 **!!! There is no support for AVR (UNO, MEGA) !!!**<br>
 The main development platform is the Raspberry Pi Pico(2) based on the RP2040/RP2350 microcontroller.<br>
 Only boards with native USB are supported, in the moment this is RaspeberryPI Pico(2) and Teensy (3.5 and 4.1),
-these boards have also naitve `printf` support.<br>
-From Arduino only the GIGA board is supported.<br>
+these boards have also native `printf` support.<br>
+From Arduino it should work with boards like GIGA or Arduin Uno Q.<br>
 
 **Pro of the Picos**
 
 - cheap, starting at $4.- for the original, $3.- for clones with USB-C
 - powerfull 133MHz Clock, Dual Core
-- 264kB RAM, up to 16MB Flash
-- WIZnet have many boards with Ethernet, the price is about 10.-$/€
+- 264kB (520kB Pico2) RAM, up to 16MB Flash and external RAM (Pico2)
+- WIZnet [https://wiznet.io](https://wiznet.io) have many boards with Ethernet, the price is about 10.-$/€
 
 **Contra**
 
@@ -90,8 +96,8 @@ It is recommended to use the Earl E. Philhower Core [https://github.com/earlephi
 ### Adafruit Seesaw
 
 Support for Adafruits Seesaw I2C modules which makes hardware setup very simple.<br>
-- Encoder https://www.adafruit.com/product/5880
-- NeoKey 1x4 https://www.adafruit.com/product/4980
+- Encoder [https://www.adafruit.com/product/5880]([https://wiznet.io](https://www.adafruit.com/product/5880)) 
+- NeoKey 1x4 [https://www.adafruit.com/product/4980]([https://www.adafruit.com/product/5880](https://www.adafruit.com/product/4980))
 
 ### Buttons and Encoders
 
@@ -125,19 +131,20 @@ There is also a cheap board available directly from **WIZnet**, the W5500-EVB-Pi
 
 - An Arduino compatible Ethernet library like Ethernet3 [https://github.com/sstaub/Ethernet3](https://github.com/sstaub/Ethernet3) or the Arduino Ethernet library [https://github.com/arduino-libraries/Ethernet](https://github.com/arduino-libraries/Ethernet)
 - Optional for Teensy MAC address [https://github.com/sstaub/TeensyID](https://github.com/sstaub/TeensyID)
+- Ethernet3 library have also a function to generate a local MAC Address automatic
 - WizNet W5500 a hard reset should performed to avoid connection problems with switches, if this can't done by board hardware. This must done before `Ethernet.begin()`
 		- for Ethernet3 library use `Ethernet.hardreset()`
 		- Arduino Ethernet library should do this with following code 
 
 ```cpp
-void hardreset(uint8_t pinRST) {
-	pinMode(pinRST, OUTPUT);
-	digitalWrite(pinRST, HIGH);
-	digitalWrite(pinRST, LOW);
-	delay(1);
-	digitalWrite(pinRST, HIGH);
-	delay(150);
-	}
+  void hardreset(uint8_t pinRST) {
+  pinMode(pinRST, OUTPUT);
+  digitalWrite(pinRST, HIGH);
+  digitalWrite(pinRST, LOW);
+  delay(1);
+  digitalWrite(pinRST, HIGH);
+  delay(150);
+  }
 ```
 
 **Teensy 4.1 with build in Ethernet**<br>
@@ -155,7 +162,7 @@ void hardreset(uint8_t pinRST) {
 There are 3 interface available
 - USB
 - UDP
-- TCP Slip over port 3037
+- TCP Slip over port 3037 (default)
 
 ## USB configuration and initialization
 For USB connection add the simple interface function `init()` in ```setup()```
@@ -164,8 +171,8 @@ For USB connection add the simple interface function `init()` in ```setup()```
 #include "eOS3.h"
 eOS3 eos;
 void setup() {
-	eos.init();
-	}
+  eos.begin();
+  }
 ```
 
 ## Ethernet configuration and initialization
@@ -213,10 +220,10 @@ uint16_t eosPort = 8000; // on this port EOS listen for data
 EthernetUDP udp;
 eOS3 eos;
 void setup () {
-	Ethernet.begin(mac, localIP, subnet);
-	eos.init(udp, eosIP, eosPort, localPort);
-	eos.init(udp, eosIP); // for using default ports
-	}
+  Ethernet.begin(mac, localIP, subnet);
+  eos.begin(udp, eosIP, eosPort, localPort);
+  // eos.begin(udp, eosIP); // for using default ports
+  }
 ```
 
 - for TCP
@@ -227,9 +234,9 @@ void setup () {
 EthernetClient tcp;
 eOS3 eos;
 void setup () {
-	Ethernet.begin(mac, localIP, subnet);
-	eos.init(tcp, eosIP);
-	}
+  Ethernet.begin(mac, localIP, subnet);
+  eos.begin(tcp, eosIP);
+  }
 ```
 
 ## Examples
@@ -239,14 +246,14 @@ void setup () {
 # Documention eOS3 class basics
 
 You must include the header file in the beginning of the sketch.<br>
-`#include "eOS3.h`
+`#include "eOS3.h"`
 
-## init() USB
+## begin() USB
 
 Set the USB interface.
 
 ```cpp
-void init();
+void begin();
 ```
 
 **Example**
@@ -255,16 +262,16 @@ void init();
 #include "eOS3.h"
 eOS3 eos;
 void setup() {
-	// ...
-	eos.init(();
-	// ...
-	}
+  // ...
+  eos.begin(();
+  // ...
+  }
 ```
 
-## interface() UDP
+## begin() UDP
 Set the UDP interface
 ```cpp
-void intit(UDP &udp, IPAddress ip, uint16_t udpRxPort = 8000, uint16_t udpTxPort = 8001);
+void begin(UDP &udp, IPAddress ip, uint16_t udpRxPort = 8000, uint16_t udpTxPort = 8001);
 ```
 - **ip** the IP address of the console / Nomad
 - **&udp** UDP interface
@@ -276,20 +283,21 @@ void intit(UDP &udp, IPAddress ip, uint16_t udpRxPort = 8000, uint16_t udpTxPort
 #include "eOS3.h"
 eOS3 eos;
 void setup() {
-	// ...
-	eos.init(udp, eosIP, eosPort, localPort);
-	eos.init(udp, eosIP); // for using default ports
-	// ...
-	}
+  // ...
+  eos.begin(udp, eosIP, eosPort, localPort);
+  // eos.begin(udp, eosIP); // for using default ports
+  // ...
+  }
 ```
 
-## intit() TCP
+## begin() TCP
 Set the TCP interface on port 3037
 ```cpp
-void init(Client &tcp, IPAddress ip);
+void begin(Client &tcp, IPAddress ip, uint16_t tcpPort = 3037);
 ```
 - **ip** the IP address of the console / Nomad
 - **&tcp** TCP interface
+- **&tcpPort** TCP port, default 3037
 
 **Example**
 ```cpp
@@ -297,7 +305,7 @@ void init(Client &tcp, IPAddress ip);
 eOS3 eos;
 void setup() {
 	// ...
-	eos.init(eosIP, tcp);
+	eos.begin(eosIP, tcp);
 	// ...
 	}
 ```
@@ -314,19 +322,15 @@ void update();
 eOS3 eos;
 
 void setup() {
-	// ...
-	}
+  // ...
+  }
 
 void loop() {
-	// ...
-	eos.update();
-	// ...
-	}
+  // ...
+  eos.update();
+  // ...
+  }
 ```
-
-## shift()
-
-
 
 # eOS3 Helper functions
 
@@ -336,7 +340,7 @@ Small functions to improve workflow.
 With a Filter you get only messages from the console which you can use for proceeding informations.<br>
 This should done in the ```connected()``` callback.
 ```cpp
-void filter(string pattern[]);
+void filter(string pattern);
 ```
 - **pattern** filter pattern
 
@@ -348,7 +352,7 @@ eos.filter("/eos/out/param/*"); // only parameter messages will send to the endp
 ## filterRemove()
 Remove a specific filter.
 ```cpp
-void filterRemove(string pattern[]);
+void filterRemove(string pattern);
 ```
 - **pattern** filter pattern
 
@@ -373,16 +377,17 @@ eos.filterClear();
 With subscription you can get special informations about the dedicated parameters.
 
 ```cpp
-void subscription(const char parameter[], int32_t subscribe = SUBSCRIBE);
+void subscription(int32_t subscribe = SUBSCRIBE);
+void subscription(string parameter, int32_t subscribe = SUBSCRIBE);
 ```
 
-- **parameter** parameter name you want to subscribe
+- **parameter** optional parameter name you want to subscribe
 - **subscribe** you can SUBCRIBE (default) or UNSUBSCRIBE a parameter
 
 **Example**
 
 ```cpp
-subscription("Pan"); // on Pan change EOS will send ```/eos/out/param/Pan=<value>```
+eos.subscription("Pan"); // on Pan change EOS will send ```/eos/out/param/Pan=<value>```
 ```
 
 ## ping()
@@ -391,15 +396,17 @@ With a ping you can get a reaction from the console which helps you to identify 
 
 ```cpp
 void ping(); // send a ping without a message
-void ping(const char msg[]); // send a ping with an additional message 
+void ping(string message); // send a ping with a string
+void ping(int32_t number); // send a ping with a number
 ```
 
-- **msg** additional message to send
+- **message** otional string to send
+- **number** otional number to send
 
 **Example**
 
 ```cpp
-ping("hello OSC"); // will send a ping with a message
+eos.ping("hello OSC"); // will send a ping with a message
 ```
 
 ## reset()
@@ -413,7 +420,35 @@ void reset();
 **Example**
 
 ```cpp
-reset();
+eos.reset();
+```
+
+## command()
+
+Send a string to the existing command line
+
+```cpp
+void command(string cmd); // send a command
+```
+
+**Example**
+
+```cpp
+eos.command("Chan 5);
+```
+
+## newCommand()
+
+Send a string to the command line and clear it before
+
+```cpp
+void newCommand(string cmd); // send a command
+```
+
+**Example**
+
+```cpp
+eos.newCommand("Chan 5);
 ```
 
 ## user()
@@ -432,27 +467,107 @@ void user(int16_t userID);
 **Example**
 
 ```cpp
-user(2); // send messages to user 2
+eos.user(2); // set user 2
 ```
 
-## shiftButton()
+## initFaders()
 
-This function allows you to assign a hardware button as a **Shift** button. **Shift** set the encoder and wheel messages to the **Fine** mode or for opposite the acceleration of the **Intens** parameter. This must done in ```setup()```
+Initialise a fader bank, this must done after an established connection, so this method should used inside the `connected()` function.
 
 ```cpp
-void shiftButton(uint8_t pin);
+void initFaders(uint8_t faders = 10, uint8_t index = 1, uint8_t page = 1);
 ```
 
--**pin** number of the pin you want to use for SHIFT
+- **faders** number of faders to init, default 10
+- **init** index (bank) number, default 1
+- **page** fader page, default 1
 
 **Example**
 
 ```cpp
+void connected() {
+  // ...
+  eos.initFaders(5); // init 5 faders
+  // ...
+  }
+```
+
+## initDS()
+
+Initialise a Direct Select bank, this must done after an established connection, so this method should used inside the `connected()` function.
+
+```cpp
+void initDS(button_t type, uint8_t count, uint8_t index = 1, uint16_t page = 1, bool flexi = false);
+```
+
+- **type** DS type, CHAN, GROUP, IP, FP, CP, BP, PRESET, MACRO, FX, SNAP, MS, SCENE, PIXMAP, CURVE, SC 
+- **count** number of DS buttons to init, default 10
+- **init** index (bank) number, default 1
+- **page** fader page, default 1
+- **flexi** set flexi state, default false
+
+**Example**
+
+```cpp
+void connected() {
+  // ...
+  eos.initDS(MACRO, 10); // init 10 macro buttons
+  // ...
+  }
+```
+
+# Classes
+
+
+## Shift()
+
+This function allows you to assign a hardware button as a **Shift** button. **Shift** set the encoder and wheel messages to the **Fine** mode.
+For the **Intens** parameter it works in opposite and does accelerate the ticks. This should done before `setup()`.
+
+### Constructor
+
+```cpp
+Shift(uint8_t pin);
+Shift(); // for virtual devices
+```
+
+- **pin** number of the pin you want to use for SHIFT, not needed for virtual devices
+
+### Methods
+
+#### update()
+
+Update must done regulary in `loop()` to check the state of the shift button.
+
+```cpp
+void update();
+void update(bool state); // for virtual devices
+```
+
+#### mode()
+
+Mode allows you set the shift button in Toggle mode
+
+```cpp
+void mode(buttonMode_t modus);
+```
+
+- **modus** change between PUSH and TOGGLE
+
+#### tick()
+
+#### state()
+
+**Example**
+
+```cpp
+Shift shift(4) // init class and use pin 4 for the SHIFT button
 void setup() {
-	// ...
-	shiftButton(4); // use pin 4 for the SHIFT button
-	// ...
-	}
+  shift.mode(TOGGLE);
+  }
+void loop() {
+  shift.update();
+  }
 ```
 
 ## accelerationButton()
@@ -463,7 +578,7 @@ This function allows you to assign a hardware button as a **Accelaration** butto
 void accelarationButton(uint8_t pin);
 ```
 
--**pin** number of the pin you want to use for Acceleration
+- **pin** number of the pin you want to use for Acceleration
 
 **Example**
 
@@ -475,9 +590,7 @@ void setup() {
 	}
 ```
 
-# Classes
-
-## OscButton
+## Button
 
 With this new universal class you can create generic buttons. In the moment following function types are available:
 - RAW send a raw message (without arguments)
@@ -489,8 +602,8 @@ With this new universal class you can create generic buttons. In the moment foll
 Create a new OSC button object. This should done before ```setup()```
 
 ```cpp
-OscButton(uint8_t pin, button_t type, const char strng[]);
-OscButton(uint8_t pin, button_t type, int number);
+Button(uint8_t pin, button_t type, strng);
+Button(uint8_t pin, button_t type, int number);
 ```
 
 - **pin** the connection pin for the button hardware
@@ -501,8 +614,8 @@ OscButton(uint8_t pin, button_t type, int number);
 **Example**
 
 ```cpp
-OscButton next(2, KEY, "Next"); // make a new osc button on Pin 2
-OscButton last(3, KEY, "Last"); // make a new osc button on Pin 3
+Button next(2, KEY, "Next"); // make a new osc button on Pin 2
+Button last(3, KEY, "Last"); // make a new osc button on Pin 3
 ```
 
 ### Methods

@@ -68,7 +68,7 @@ void setup() {
 	selection.parameter(SHUTTER, "Frame Thrust D", "Thrust D");
 	selection.parameter(SHUTTER, "Frame Angle D", "Angle D");
 	selection.parameter(SHUTTER, "Frame Assembly", "Assembly");
-	eos.init(); // for USB connection
+	eos.begin(); // for USB connection
 }
 
 void loop() {

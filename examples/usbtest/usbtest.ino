@@ -53,7 +53,7 @@ void setup() {
 	// put your setup code here, to run once
 	pinMode(LED, OUTPUT);
 	digitalWrite(LED, true);
-	eos.init(); // for USB connection
+	eos.begin(); // for USB connection
 
 	}
 
