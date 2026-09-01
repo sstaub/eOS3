@@ -28,8 +28,6 @@ Channel channel;
 Shift shift;
 Control2nd btn2nd;
 
-string selctionLast;
-
 void updateDisplay();
 
 void setup() {
@@ -112,14 +110,11 @@ void maintain() {
 		return;
 		}
 
-	if(channel.parse()) {
-		if (channel.selection() != selctionLast) {
-			selctionLast = channel.selection();
-			lcd.locate(1, 1);
-			lcd.clr(1);
-			lcd.print("Chan ");
-			lcd.print(channel.selection().c_str());
-			}
+	if (channel.parse()) {
+		lcd.locate(1, 1);
+		lcd.clr(1);
+		lcd.print("Chan ");
+		lcd.print(channel.selection().c_str());
 		return;
 		}
 	}

@@ -1,5 +1,25 @@
 /*
-eOS3 for arduino by Stefan Staub (c)2026 is licensed under CC BY-NC-SA 4.0
+MIT License
+
+eOS3 Arduino library for ETC EOS family, 2026(c) Stefan Staub
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
 */
 
 /**
@@ -19,28 +39,26 @@ eOS3 for arduino by Stefan Staub (c)2026 is licensed under CC BY-NC-SA 4.0
  */
 
 // TODO fader fetch/lock up/down marker
-// TODO 2nd -> shift, 3rd -> accelaration test
 
 #ifndef EOS3_H
 #define EOS3_H
 
 /*******************************************************************************
  * Library includes
- ******************************************************************************/
+*******************************************************************************/
 
 #include "Arduino.h"
 
 #include "Udp.h"
 #include "Client.h"
 
-#include <cstdint>
 #include <string>
 #include <vector>
 using namespace std;
 
 /*******************************************************************************
  * Defines
- ******************************************************************************/
+*******************************************************************************/
 
 // defines for SLIP
 const uint8_t END = 0xC0;
@@ -66,8 +84,8 @@ const uint8_t ESC_ESC = 0xDD;
 typedef void (*cbptr)();
 
 /*******************************************************************************
- * General handlers functions
- ******************************************************************************/
+ * General callback handlers functions
+*******************************************************************************/
 
 void maintain();
 void connected();
@@ -75,7 +93,7 @@ void disconnected();
 
 /*******************************************************************************
  * Enums und Structs
- ******************************************************************************/
+*******************************************************************************/
 
 typedef enum Debounce {
 	SOFTWARE,
@@ -120,7 +138,7 @@ typedef enum ButtonTypes {
 	PRESET,
 	MACRO,
 	FX,
-	SNAP,
+	SNAPSHOT,
 	MS,
 	SCENE,
 	PIXMAP,
@@ -192,7 +210,7 @@ typedef enum FaderType {
 
 /*******************************************************************************
  * The master class eOS3
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Class definitions for a general interface
@@ -346,7 +364,7 @@ class eOS3 {
 
 /*******************************************************************************
  * Shift button class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Shift button handler object
@@ -400,7 +418,7 @@ class Shift {
 
 /*******************************************************************************
  * Accelaration button class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Accelaration button handler object
@@ -503,7 +521,7 @@ class Control2nd {
 
 /*******************************************************************************
  * 3rd button control class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief 3rd button control handler object
@@ -551,7 +569,7 @@ class Control3rd {
 
 /*******************************************************************************
  * Button class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Universal button object
@@ -563,7 +581,7 @@ class Button {
 		 * @brief Construct a new OSC button object
 		 * 
 		 * @param pin button pin, not needed for virtual devices
-		 * @param type KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, SUB, FX, PIXMAP, CURVE, SNAP, SCENE
+		 * @param type KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, SUB, FX, PIXMAP, CURVE, SNAPSHOT, SCENE
 		 * @param strng optional for KEY name and RAW message
 		 * @param number optional number for MACRO
 		 */
@@ -586,7 +604,6 @@ class Button {
 		 * @param state optional for virtual devices, TRUE if button press
 		 */
 		void update();
-		void update2();
 		void update(bool state);
 
 	private:
@@ -597,7 +614,7 @@ class Button {
 
 /*******************************************************************************
  * 2nd Button class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief universal 2nd button object for use with 2nd button control key
@@ -643,7 +660,7 @@ class Button2nd {
 
 /*******************************************************************************
  * 3rd Button class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief universal 2nd button object for use with 2nd button control key
@@ -689,7 +706,7 @@ class Button3rd {
 
 /*******************************************************************************
  * Wheel class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Class definitions for Encoder controlling parameters by their current wheel number
@@ -772,7 +789,7 @@ class Wheel {
 
 /*******************************************************************************
  * Encoder class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Class definitions for Encoder controlling parameters by their name
@@ -864,7 +881,7 @@ class Encoder {
 
 /*******************************************************************************
  * Absolute levels class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Absolute levels functions
@@ -910,7 +927,7 @@ class AbsoluteLevels {
 
 /*******************************************************************************
  * Direct select class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Button object for direct selects, initDS() must done before use
@@ -923,7 +940,7 @@ class DS {
 		 * 
 		 * @param pin DS button pin, not needed for virtual devices
 		 * @param number DS button number
-		 * @param bank DS bank
+		 * @param index DS index (bank)
 		 */
 		DS(uint8_t pin, uint8_t number, uint8_t index = 1);
 		DS(uint8_t number, uint8_t index = 1);
@@ -947,7 +964,7 @@ class DS {
 
 /*******************************************************************************
  * Direct select handle class
- ******************************************************************************/
+*******************************************************************************/
 
 class DSTool {
 	public:
@@ -957,40 +974,30 @@ class DSTool {
 		 * 
 		 * @param pinUp pin of the Up button, not needed for virtual devices
 		 * @param pinDown pin of the Down button, not needed for virtual devices
-		 * @param index 
 		 */
-		DSTool(uint8_t pinUp, uint8_t pinDown);
+		DSTool(uint8_t pinUp, uint8_t pinDown, uint8_t pinFlexi = NO_PIN);
 		DSTool();
-
-		/**
-		 * @brief Add an additional flexi button
-		 * 
-		 * @param pinFlexi pin of the Flexi button, not needed for virtual devices
-		 */
-		void flexiPin(uint8_t pinFlexi);
 
 		/**
 		 * @brief Initialise a direct select bank, this must done after an established connection
 		 * 
-		 * @param type button type 
+		 * @param type DS type CHAN, GROUP, IP, CP, FP, BP, PRESET, MACRO, FX, SNAPSHOT, MS, SCENE
 		 * @param count 
-		 * @param page 
 		 * @param index 
-		 * @param flexi 
 		 */
 		void init(button_t type, uint8_t count, uint8_t index = 1);
 
 		/**
 		 * @brief Set DS button type
 		 * 
-		 * @param type 
+		 * @param type  DS type CHAN, GROUP, IP, CP, FP, BP, PRESET, MACRO, FX, SNAPSHOT, MS, SCENE
 		 */
 		void typeDS(button_t type);
 
 		/**
 		 * @brief Return the type name of the DS bank given by EOS
 		 * 
-		 * @return string 
+		 * @return string DS type name from console
 		 */
 		string typeDS();
 
@@ -1022,7 +1029,7 @@ class DSTool {
 		 * @param number of the DS button
 		 * @return string button name
 		 */
-		string label(uint8_t number); // TODO without number
+		string label(uint8_t number);
 
 		/**
 		 * @brief Return the number of the DS
@@ -1030,7 +1037,7 @@ class DSTool {
 		 * @param number of the DS button
 		 * @return string of the DS number
 		 */
-		string number(uint8_t number);
+		uint16_t number(uint8_t number);
 
 		/**
 		 * @brief Check for updated page, must be in the loop()
@@ -1047,31 +1054,68 @@ class DSTool {
 		uint8_t pinUpLast;
 		uint8_t pinDown;
 		uint8_t pinDownLast;
-		uint8_t pinFlexi;
+		uint8_t pinFlexi = NO_PIN;
 		uint8_t pinFlexiLast;
 		uint8_t count;
 		uint8_t index = 1;
 		button_t type;
 		uint16_t currentPage = 1;
 		bool flexiState = false;
-		uint16_t currentPageLast[12] = {1}; // size
-		bool flexiStateLast[12] = {false};
+		uint16_t currentPageLast[12] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; // size
+		bool flexiStateLast[12] = {false, false, false, false, false, false, false, false, false, false, false, false};
 		string typeName;
 		string patternUp;
 		string patternDown;
 		string patternSearchButton;
 		string patternSearchPage;
 		struct DSData {
-			string number;
+			uint16_t number;
 			string label;
 			};
 		struct DSData* dsData;
+
+		//friend ButtonDSType;
 	};
 
 
 /*******************************************************************************
+ * DS Type button
+*******************************************************************************/
+
+/**
+ * @brief Universal button object
+ * 
+ */
+class ButtonDSType {
+	public:
+		/**
+		 * @brief Construct a new OSC button object
+		 * 
+		 * @param pin button pin, not needed for virtual devices
+		 * @param type KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, SUB, FX, PIXMAP, CURVE, SNAPSHOT, SCENE
+		 */
+		ButtonDSType(DSTool &dsTool, uint8_t pin, button_t type);
+		ButtonDSType(DSTool &dsTool, button_t type);
+
+		/**
+		 * @brief Update the state of the button, must done in the while() loop
+		 * 
+		 * @param state optional for virtual devices, TRUE if button press
+		 */
+		void update();
+		void update(bool state);
+
+	private:
+		uint8_t pin;
+		uint8_t last;
+		button_t type;
+		DSTool *dsTool;
+		friend DSTool;
+	};
+
+/*******************************************************************************
  * Submaster class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Submaster object
@@ -1131,13 +1175,13 @@ class Submaster {
 		void updateValue(uint8_t value, bool fireState = false);
 	
 	private:
-		uint16_t sub;
-		uint8_t val;
 		uint8_t firePin = NO_PIN;
 		uint8_t fireLast;
 		uint8_t analogPin = NO_PIN;
-		int16_t analogLast;
 		uint8_t valLast;
+		uint8_t val;
+		uint16_t sub;
+		int16_t analogLast;
 		uint32_t updateTime;
 		string patternSub;
 		string patternFire;
@@ -1147,7 +1191,7 @@ class Submaster {
 
 /*******************************************************************************
  * Fader class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Fader object
@@ -1217,7 +1261,7 @@ class Fader {
 		 */
 		void jitter(uint8_t delta);
 
-		/**
+		/** TODO
 		 * @brief Return the lock state
 		 * 
 		 * @return true OSC locked
@@ -1246,6 +1290,13 @@ class Fader {
 		 */
 		void update(int value);
 
+		/** TODO
+		 * @brief Update the virtual value input
+		 * 
+		 * @param value input 0...100
+		 */
+		void updateValue(uint8_t value, bool fireState = false);
+
 	private:
 		uint8_t analogPin = NO_PIN;
 		uint8_t fader;
@@ -1273,7 +1324,7 @@ class Fader {
 
 /*******************************************************************************
  * Fader handling class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Class for helpers, control and data handling for faders
@@ -1402,7 +1453,7 @@ class FaderTool {
 
 /*******************************************************************************
  * Parameter list handling class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Class for control the parameter selection
@@ -1530,7 +1581,7 @@ class SelectParameter {
 
 /*******************************************************************************
  * Parameter category list handling class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Class for control the parameter selection
@@ -1705,7 +1756,7 @@ class SelectCategory {
 
 /*******************************************************************************
  * Parameter category dynamic handling class
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Class for control the parameter selection
@@ -1742,6 +1793,14 @@ class SelectDynamic {
 		 * @param alias new alais name
 		 */
 		void alias(string parameter, string alias);
+
+		/**
+		 * @brief Get the alias name of a parameter by encoder
+		 * 
+		 * @param encoder number of the encoder
+		 * @return string parameter name
+		 */
+		string alias(uint8_t encoder);
 
 		/**
 		 * @brief Get the information if there are data on a specific encoder wheel
@@ -1888,7 +1947,7 @@ class SelectDynamic {
 
 /*******************************************************************************
  * Special parsers
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Class for parsing the softkey labels
@@ -2457,12 +2516,12 @@ class EventState {
 
 /*******************************************************************************
  * Helpers for creating patterns
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief Create a pattern based on button type and number
  * 
- * @param type MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, SUB, FX, PIXMAP, CURVE, SNAP, SCENE, SC (Show Control)
+ * @param type MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, SUB, FX, PIXMAP, CURVE, SNAPSHOT, SCENE, SC (Show Control)
  * @return string 
  */
 string patternTypeNumber(button_t type, uint16_t number);
@@ -2509,7 +2568,7 @@ string patternAbsolute(levels_t function, string param);
 
 /*******************************************************************************
  * Helper for data conversion
- ******************************************************************************/
+*******************************************************************************/
 
 /**
  * @brief convert a float value to a string
@@ -2521,8 +2580,8 @@ string patternAbsolute(levels_t function, string param);
 string ftos(float float32, uint8_t digits = 3);
 
 /*******************************************************************************
- * OSC handling
- ******************************************************************************/
+ * OSC handling class
+*******************************************************************************/
 
 /**
  * @brief OSC class
@@ -2664,13 +2723,6 @@ class OSC {
 		 * @return string String
 		 */
 		string getString(uint8_t pos);
-
-		/**
-		 * @brief Set an optional callback function if OSC message arrived
-		 * 
-		 * @param call callback function
-		 */
-		void callback(cbptr call);
 
 		void sendHandshake();
 

@@ -1,6 +1,4 @@
 #include "eOS3.h"
-#include <cstddef>
-#include <cstdint>
 
 // TODO map function
 /*
@@ -35,7 +33,7 @@ bool state3rd = false;
 
 /*******************************************************************************
  * The master class eOS3
- ******************************************************************************/
+*******************************************************************************/
 
 eOS3::eOS3() {}
 
@@ -116,7 +114,7 @@ void eOS3::initDS(button_t type, uint8_t count, uint8_t index, uint16_t page, bo
 
 /*******************************************************************************
  * Shift button class
- ******************************************************************************/
+*******************************************************************************/
 
 Shift::Shift(uint8_t pin) {
 	this->pin = pin;
@@ -189,7 +187,7 @@ void Shift::update(bool state) {
 
 /*******************************************************************************
  * Accelaration button class
- ******************************************************************************/
+*******************************************************************************/
 
 Acceleration::Acceleration(uint8_t pin) {
 	this->pin = pin;
@@ -262,7 +260,7 @@ void Acceleration::update(bool state) {
 
 /*******************************************************************************
  * 2nd button control class
- ******************************************************************************/
+*******************************************************************************/
 
 Control2nd::Control2nd(uint8_t pin) {
 	this->pin = pin;
@@ -331,7 +329,7 @@ void Control2nd::update(bool state) {
 
 /*******************************************************************************
  * 3rd button control class
- ******************************************************************************/
+*******************************************************************************/
 
 Control3rd::Control3rd(uint8_t pin) {
 	this->pin = pin;
@@ -400,7 +398,7 @@ void Control3rd::update(bool state) {
 
 /*******************************************************************************
  * Button class
- ******************************************************************************/
+*******************************************************************************/
 
 Button::Button(uint8_t pin, button_t type, string strng) {
 	this->pin = pin;
@@ -452,7 +450,7 @@ void Button::update(bool state) {
 
 /*******************************************************************************
  * Button2nd class
- ******************************************************************************/
+*******************************************************************************/
 
 Button2nd::Button2nd(uint8_t pin, button_t type, string strng) {
 	this->pin = pin;
@@ -498,7 +496,7 @@ void Button2nd::update(bool state) {
 
 /*******************************************************************************
  * Button3rd class
- ******************************************************************************/
+*******************************************************************************/
 
 Button3rd::Button3rd(uint8_t pin, button_t type, string strng) {
 	this->pin = pin;
@@ -544,7 +542,7 @@ void Button3rd::update(bool state) {
 
 /*******************************************************************************
  * Wheel class
- ******************************************************************************/
+*******************************************************************************/
 
 Wheel::Wheel(uint8_t pinA, uint8_t pinB, direction_t direction) {
 	this->pinA = pinA;
@@ -664,7 +662,7 @@ void Wheel::update(int32_t motion) {
 
 /*******************************************************************************
  * Encoder class
- ******************************************************************************/
+*******************************************************************************/
 
 Encoder::Encoder(uint8_t pinA, uint8_t pinB, direction_t direction) {
 	this->pinA = pinA;
@@ -807,7 +805,7 @@ void Encoder::update(int32_t motion) {
 
 /*******************************************************************************
  * Absolute levels class
- ******************************************************************************/
+*******************************************************************************/
 
 AbsoluteLevels::AbsoluteLevels(uint8_t pin, levels_t function, levels_t function2nd) {
 	this->pin = pin;
@@ -883,7 +881,7 @@ void AbsoluteLevels::update(bool state) {
 
 /*******************************************************************************
  * Direct select class
- ******************************************************************************/
+*******************************************************************************/
 
 DS::DS(uint8_t pin, uint8_t number, uint8_t index) {
 	this->pin = pin;
@@ -924,24 +922,23 @@ void DS::update(bool state) {
 
 /*******************************************************************************
  * Direct select handle class
- ******************************************************************************/
+*******************************************************************************/
 
-DSTool::DSTool(uint8_t pinUp, uint8_t pinDown) {
+DSTool::DSTool(uint8_t pinUp, uint8_t pinDown, uint8_t pinFlexi) {
 	this->pinUp = pinUp;
 	pinMode(pinUp, INPUT_PULLUP);
 	pinUpLast = digitalRead(pinUp);
 	this->pinDown = pinDown;
 	pinMode(pinDown, INPUT_PULLUP);
 	pinDownLast = digitalRead(pinDown);
+	if (pinFlexi != NO_PIN) {
+		this->pinFlexi = pinFlexi;
+		pinMode(pinFlexi, INPUT_PULLUP);
+		pinFlexiLast = digitalRead(pinFlexi);
+		}
 	}
 
 DSTool::DSTool() {
-	}
-
-void DSTool::flexiPin(uint8_t pinFlexi) {
-	this->pinFlexi = pinFlexi;
-	pinMode(pinFlexi, INPUT_PULLUP);
-	pinFlexiLast = digitalRead(pinFlexi);
 	}
 
 void DSTool::init(button_t type, uint8_t count, uint8_t index) {
@@ -990,7 +987,7 @@ int8_t DSTool::parse() {
 			label.replace(lf, 2, " ");
 			}
 		dsData[ds - 1].label = label;
-		dsData[ds - 1].number = osc.getString(2);
+		dsData[ds - 1].number = stoi(osc.getString(2));
 		return ds;
 		}
 	return 0;
@@ -1000,7 +997,7 @@ string DSTool::label(uint8_t number) {
 	return dsData[number - 1].label;
 	}
 
-string DSTool::number(uint8_t number) {
+uint16_t DSTool::number(uint8_t number) {
 	return dsData[number - 1].number;
 	}
 
@@ -1036,15 +1033,17 @@ void DSTool::update() {
 		return;
 		}
 
-	if (digitalRead(pinFlexi) != pinFlexiLast) {
-		if (pinFlexiLast == false) pinFlexiLast = true;
-		else {
-			pinFlexiLast = false;
-			flexiState = !flexiState;
-			currentPage = 1;
-			osc.message(patternDS(type, count, index, currentPage, flexiState));
+	if (pinFlexi != NO_PIN || pinFlexi != VIRTUAL_PIN) {
+		if (digitalRead(pinFlexi) != pinFlexiLast) {
+			if (pinFlexiLast == false) pinFlexiLast = true;
+			else {
+				pinFlexiLast = false;
+				flexiState = !flexiState;
+				currentPage = 1;
+				osc.message(patternDS(type, count, index, currentPage, flexiState));
+				}
+			return;
 			}
-		return;
 		}
 	}
 
@@ -1080,9 +1079,49 @@ void DSTool::update(bool stateUp, bool stateDown, bool stateFlexi) {
 		}
 	}
 
+
+/*******************************************************************************
+ * DS Type button
+*******************************************************************************/
+
+ButtonDSType::ButtonDSType(DSTool &dsTool, uint8_t pin, button_t type) {
+	this->dsTool = &dsTool;
+	this->pin = pin;
+	this->type = type;
+	}
+
+ButtonDSType::ButtonDSType(DSTool &dsTool, button_t type) {
+	this->dsTool = &dsTool;
+	this->type = type;
+	}
+
+void ButtonDSType::update() {
+	if (state2nd || state3rd) return;
+	if (digitalRead(pin) != last) {
+		if (last == false) {
+			last = true;
+			}
+		else {
+			last = false;
+			dsTool->typeDS(type);
+			}
+		}
+	}
+
+void ButtonDSType::update(bool state) {
+	if (state2nd || state3rd) return;
+	if (state != last) {
+		if (last == false) {
+			last = true;
+			dsTool->typeDS(type);
+			}
+		else last = false;
+		}
+	}
+
 /*******************************************************************************
  * Submaster class
- ******************************************************************************/
+*******************************************************************************/
 
 Submaster::Submaster(uint8_t analogPin, uint16_t sub) {
 	this->analogPin = analogPin;
@@ -1094,6 +1133,7 @@ Submaster::Submaster(uint8_t analogPin, uint16_t sub) {
 Submaster::Submaster(uint16_t sub) {
 	this->sub = sub;
 	updateTime = millis();
+	patternSub = "/eos/sub/" + to_string(sub);
 	}
 
 uint8_t Submaster::value() {
@@ -1217,7 +1257,7 @@ void Submaster::updateValue(uint8_t value, bool fireState) {
 
 /*******************************************************************************
  * Fader class
- ******************************************************************************/
+*******************************************************************************/
 
 Fader::Fader(uint8_t analogPin, uint8_t fader, uint8_t index) {
 	this->analogPin = analogPin;
@@ -1358,7 +1398,7 @@ void Fader::update() {
 
 /*******************************************************************************
  * Fader handling class
- ******************************************************************************/
+*******************************************************************************/
 
 FaderTool::FaderTool(uint8_t pinUp, uint8_t pinDown) {
 	this->pinUp = pinUp;
@@ -1560,7 +1600,7 @@ void FaderTool::update(bool stateUp, bool stateDown) {
 
 /*******************************************************************************
  * Parameter list handling class
- ******************************************************************************/
+*******************************************************************************/
 
 SelectParameter::SelectParameter(uint8_t pinUp, uint8_t pinDown, uint8_t encoders) {
 	this->pinUp = pinUp;
@@ -1774,7 +1814,7 @@ void SelectParameter::update(bool stateUp, bool stateDown) {
 
 /*******************************************************************************
  * Parameter category list handling class
- ******************************************************************************/
+*******************************************************************************/
 
 SelectCategory::SelectCategory(uint8_t pinIntens, uint8_t pinFocus, uint8_t pinColor, uint8_t pinImage, uint8_t pinForm, uint8_t pinShutter, uint8_t encoders) {
 	pins[0] = pinIntens;
@@ -1876,7 +1916,7 @@ string SelectCategory::parameter(uint8_t encoder) {
 		}
 	return "";
 	}
-// TODO delete
+
 string SelectCategory::alias(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return "";
 	if (encoder > 0 && encoder <= encoders) {
@@ -1987,7 +2027,7 @@ void SelectCategory::update(bool stateIntens, bool stateFocus, bool stateColor, 
 	if (state2nd || state3rd) return;
 	bool states[6] {stateIntens, stateFocus, stateColor, stateImage, stateForm, stateShutter}; 
 	for (uint8_t i = 0; i < 6; i++) {
-		if (states[i] == pinsLast[i]) {
+		if (states[i] != pinsLast[i]) { // TODO test
 			if (pinsLast[i] == false) {
 				pinsLast[i] = true;
 				}
@@ -2033,7 +2073,7 @@ void SelectCategory::update(category_t category) {
 
 /*******************************************************************************
  * Parameter category dynamic handling class
- ******************************************************************************/
+*******************************************************************************/
 
 SelectDynamic::SelectDynamic(uint8_t pinIntens, uint8_t pinFocus, uint8_t pinColor, uint8_t pinImage, uint8_t pinForm, uint8_t pinShutter, uint8_t encoders) {
 	pins[0] = pinIntens;
@@ -2054,8 +2094,7 @@ SelectDynamic::SelectDynamic(uint8_t pinIntens, uint8_t pinFocus, uint8_t pinCol
 SelectDynamic::SelectDynamic(uint8_t encoders) {
 	this->encoders = encoders;
 	idx = new int [encoders];
-	for (uint8_t i = 0; i < encoders; i++) idx[i] = i;
-	categoryData[INTENSITY].currentPage = 1;
+	for (uint8_t i = 0; i < encoders; i++) idx[i] = -1;
 	}
 
 void SelectDynamic::callback(cbptr call) {
@@ -2064,6 +2103,16 @@ void SelectDynamic::callback(cbptr call) {
 
 string SelectDynamic::parameter(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return "";
+	if (categoryData[currentCategory].parameters == 0) return "";
+	if (encoder > 0 && encoder <= encoders) {
+			return param[idx[encoder - 1]].parameter;
+		}
+	return "";
+	}
+
+string SelectDynamic::alias(uint8_t encoder) {
+	if (idx[encoder - 1] == -1) return "";
+	if (categoryData[currentCategory].parameters == 0) return "";
 	if (encoder > 0 && encoder <= encoders) {
 		if (aliases.size()) {
 			for (size_t i = 0; i < aliases.size(); i++) {
@@ -2075,7 +2124,7 @@ string SelectDynamic::parameter(uint8_t encoder) {
 		return param[idx[encoder - 1]].parameter;
 		}
 	return "";
-	}
+}
 
 void SelectDynamic::alias(string parameter, string alias) {
 	aliases.push_back({parameter, alias});
@@ -2172,7 +2221,7 @@ void SelectDynamic::indexEncoder(category_t category) {
 			}
 		else idx[i] = -1;
 		}
-	if (call != nullptr) call(); // execute callback
+	if (call != nullptr) call(); // execute callback TODO
 	}
 
 uint8_t SelectDynamic::parse() {
@@ -2281,7 +2330,7 @@ void SelectDynamic::update(bool stateIntens, bool stateFocus, bool stateColor, b
 	if (state2nd || state3rd) return;
 	bool states[6] {stateIntens, stateFocus, stateColor, stateImage, stateForm, stateShutter}; 
 	for (uint8_t i = 0; i < 6; i++) {
-		if (states[i] == pinsLast[i]) {
+		if (states[i] != pinsLast[i]) { // TODO test
 			if (pinsLast[i] == false) {
 				pinsLast[i] = true;
 				}
@@ -2328,7 +2377,7 @@ void SelectDynamic::update(category_t category) {
 
 /*******************************************************************************
  * Special parser classes
- ******************************************************************************/
+*******************************************************************************/
 
 Softkey::Softkey() {
 	}
@@ -2539,7 +2588,7 @@ bool Channel::parse() {
 			typ = "";
 			dmx = "";
 			return true;
-		}
+			}
 		int space = channelString.find(' ');
 		int bracketOpen = channelString.find('[');
 		int bracketClose = channelString.find(']');
@@ -2558,7 +2607,7 @@ bool Channel::parse() {
 			typ = "";
 			dmx = "";
 			return true;
-		}
+			}
 		if (at != -1) {
 			typ = channelString.substr(bracketClose + 2, at - bracketClose - 2);
 			dmx = channelString.substr(at + 2);
@@ -2833,7 +2882,7 @@ string EventState::state() {
 
 /*******************************************************************************
  * Helpers for creating patterns
- ******************************************************************************/
+*******************************************************************************/
 
 string patternTypeNumber(button_t type, uint16_t number) {
 	string pattern = "/eos/";
@@ -2890,7 +2939,7 @@ string patternTypeNumber(button_t type, uint16_t number) {
 			pattern += "/fire";
 			break;
 			}
-		case SNAP: {
+		case SNAPSHOT: {
 			pattern += "snap/";
 			pattern += to_string(number);
 			pattern += "/fire";
@@ -2979,7 +3028,7 @@ string patternDS(button_t type, uint8_t count, uint8_t index, uint16_t page, boo
 			dsInit += "/ms/";
 			break;
 			}
-		case SNAP: {
+		case SNAPSHOT: {
 			dsInit += "/snap/";
 			break;
 			}
@@ -2989,10 +3038,6 @@ string patternDS(button_t type, uint8_t count, uint8_t index, uint16_t page, boo
 			}
 		case SCENE: {
 			dsInit += "/scene/";
-			break;
-			}
-		case PIXMAP: {
-			dsInit += "/pixmap/";
 			break;
 			}
 		default: {}
@@ -3057,7 +3102,7 @@ string patternAbsolute(levels_t function, string param) {
 
 /*******************************************************************************
  * Helpers for general data conversion
- ******************************************************************************/
+*******************************************************************************/
 
 string ftos(float float32, uint8_t digits) {
 	return to_string(float32).substr(0, to_string(float32).find(".") + digits + 1);
@@ -3065,14 +3110,14 @@ string ftos(float float32, uint8_t digits) {
 
 /*******************************************************************************
  * OSC handling
- ******************************************************************************/
+*******************************************************************************/
 
 OSC::OSC() {}
 
 void OSC::begin() {
 	interfaceType = OSCUSB;
 	Serial.begin(115200);
-	while (!Serial) {};
+	while (!Serial);
 	sendHandshake();
 	}
 
@@ -3082,7 +3127,7 @@ void OSC::begin(UDP &udp, IPAddress ip, uint16_t portUdpTx, uint16_t portUdpRx) 
 	this->ip = ip;
 	this->portUdpRx = portUdpRx;
 	this->portUdpTx = portUdpTx;
-	while(!udp.begin(portUdpRx)) {};
+	while(!udp.begin(portUdpRx));
 	}
 
 void OSC::begin(Client &tcp, IPAddress ip, uint16_t portTcp) {
@@ -3090,7 +3135,7 @@ void OSC::begin(Client &tcp, IPAddress ip, uint16_t portTcp) {
 	this->tcp = &tcp;
 	this->ip = ip;
 	this->portTcp = portTcp;
-	while(!tcp.connect(ip, portTcp)) {};
+	while(!tcp.connect(ip, portTcp));
 	}
 
 void OSC::message(string pattern) {
@@ -3201,10 +3246,6 @@ string OSC::getString(uint8_t pos) {
 	return "";
 	}
 
-void OSC::callback(cbptr call) {
-	this->call = call;
-	}
-
 void OSC::sendHandshake() {
 	Serial.write(END);
 	Serial.write('O');
@@ -3217,21 +3258,18 @@ bool OSC::receive() {
 		case OSCUDP:
 			if (receiveUDP()) {
 				parse();
-				if (call != nullptr) call();
 				return true;
 				}
 			break;
 		case OSCTCP:
 			if (receiveTCP()) {
 				parse();
-				if (call != nullptr) call();
 				return true;
 				}
 			break;
 		case OSCUSB:
 			if (receiveUSB()) {
 				parse();
-				if (call != nullptr) call();
 				return true;
 				}
 			break;
@@ -3308,9 +3346,11 @@ bool OSC::receiveUSB() {
 		while (Serial.available()) {
 			uint8_t c = Serial.read();
 			switch (c) {
-				case END: { // TODO check if "/eos/"
-						if (!bufferReceive.compare("ETCOSC?")) {
+				case END: {
+						if (bufferReceive.compare("ETCOSC?") == 0) {
 							sendHandshake();
+							bufferReceive.clear(); // TODO
+							//callbackConnect(); // TODO
 							return false;
 							}
 						else
@@ -3335,7 +3375,7 @@ bool OSC::receiveUSB() {
 						}
 					}
 				default: {
-					bufferReceive.push_back(c);
+					bufferReceive.push_back(c); // TODO default?
 					}
 				};
 			}
@@ -3363,7 +3403,7 @@ bool OSC::receiveTCP() {
 		while (tcp->available()) {
 			uint8_t c = tcp->read();
 			switch (c) {
-				case END: { // TODO check for "/eos/"
+				case END: {
 					return true;
 					}
 				case ESC: {
