@@ -21,7 +21,7 @@ bool timeoutPingSend = false;
 #define TIMEOUT_AFTER_IDLE_MS 5000
 
 // wheel collection time, needed cause of undeterministic approch of /eos/out/wheel/
-#define COLLECT_TIME 250
+#define COLLECT_DELAY 500
 
 // shift, accelaration and 2nd/3rd global variables
 bool shiftState = false;
@@ -39,7 +39,6 @@ eOS3::eOS3() {}
 
 void eOS3::begin() {
 	osc.begin();
-	callbackConnect();
 	}
 
 void eOS3::begin(UDP &udp, IPAddress ip, uint16_t udpRxPort, uint16_t udpTxPort) {
@@ -955,7 +954,7 @@ void DSTool::init(button_t type, uint8_t count, uint8_t index) {
 
 void DSTool::typeDS(button_t type) {
 	this->type = type;
-	patternDS(type, count, index, currentPageLast[type], flexiStateLast[type]);
+	osc.message(patternDS(type, count, index, currentPageLast[type], flexiStateLast[type]));
 	}
 
 int8_t DSTool::parse() {
@@ -1088,6 +1087,8 @@ ButtonDSType::ButtonDSType(DSTool &dsTool, uint8_t pin, button_t type) {
 	this->dsTool = &dsTool;
 	this->pin = pin;
 	this->type = type;
+	pinMode(pin, INPUT_PULLUP);
+	last = digitalRead(pin);
 	}
 
 ButtonDSType::ButtonDSType(DSTool &dsTool, button_t type) {
@@ -2194,7 +2195,7 @@ void SelectDynamic::indexCollect() {
 		if (categoryData[i].parameters)
 			categoryData[i].currentPage = 1;
 		else categoryData[i].currentPage = 0;
-	}
+		}
 	if (categoryData[currentCategory].parameters) {
 		for (uint8_t i = 0; i < encoders; i++) {
 			int wheel = categoryData[currentCategory].start + i;
@@ -2208,7 +2209,7 @@ void SelectDynamic::indexCollect() {
 			idx[i] = -1;
 			}
 		}
-	if (call != nullptr) call(); // execute callback
+	if (call != nullptr) call();
 	}
 
 void SelectDynamic::indexEncoder(category_t category) {
@@ -2221,7 +2222,7 @@ void SelectDynamic::indexEncoder(category_t category) {
 			}
 		else idx[i] = -1;
 		}
-	if (call != nullptr) call(); // execute callback TODO
+	if (call != nullptr) call();
 	}
 
 uint8_t SelectDynamic::parse() {
@@ -2230,9 +2231,9 @@ uint8_t SelectDynamic::parse() {
 		uint8_t category = osc.getInt(2);
 		string parameter = osc.getString(1).substr(0, osc.getString(1).rfind('[') - 2);
 		if (param.size() < wheel) param.resize(wheel);
-		if (parameter.compare(param[wheel - 1].parameter)) {
-			if (markFlag == false) {
-				markFlag = true;
+		if (parameter.compare(param[wheel - 1].parameter) != 0) {
+			if (collectFlag == false) {
+				collectFlag = true;
 				collectTime = millis();
 				}
 			}
@@ -2247,9 +2248,9 @@ uint8_t SelectDynamic::parse() {
 	}
 
 void SelectDynamic::collect() {
-	if ((millis() >= (collectTime + COLLECT_TIME)) && markFlag == true) {
+	if ((millis() >= (collectTime + COLLECT_DELAY)) && collectFlag == true) {
+		collectFlag = false;
 		indexWheel();
-		markFlag = false;
 		}
 	}
 
@@ -2330,7 +2331,7 @@ void SelectDynamic::update(bool stateIntens, bool stateFocus, bool stateColor, b
 	if (state2nd || state3rd) return;
 	bool states[6] {stateIntens, stateFocus, stateColor, stateImage, stateForm, stateShutter}; 
 	for (uint8_t i = 0; i < 6; i++) {
-		if (states[i] != pinsLast[i]) { // TODO test
+		if (states[i] != pinsLast[i]) {
 			if (pinsLast[i] == false) {
 				pinsLast[i] = true;
 				}
@@ -3349,8 +3350,7 @@ bool OSC::receiveUSB() {
 				case END: {
 						if (bufferReceive.compare("ETCOSC?") == 0) {
 							sendHandshake();
-							bufferReceive.clear(); // TODO
-							//callbackConnect(); // TODO
+							callbackConnect(); 
 							return false;
 							}
 						else
@@ -3375,7 +3375,7 @@ bool OSC::receiveUSB() {
 						}
 					}
 				default: {
-					bufferReceive.push_back(c); // TODO default?
+					bufferReceive.push_back(c);
 					}
 				};
 			}

@@ -1073,8 +1073,6 @@ class DSTool {
 			string label;
 			};
 		struct DSData* dsData;
-
-		//friend ButtonDSType;
 	};
 
 
@@ -1110,7 +1108,6 @@ class ButtonDSType {
 		uint8_t last;
 		button_t type;
 		DSTool *dsTool;
-		friend DSTool;
 	};
 
 /*******************************************************************************
@@ -1923,7 +1920,7 @@ class SelectDynamic {
 		int *idx;
 		category_t currentCategory = INTENSITY;
 		category_t lastCategory = INTENSITY;
-		bool markFlag;
+		bool collectFlag;
 		uint32_t collectTime;
 		string select;
 		string selectLast;
