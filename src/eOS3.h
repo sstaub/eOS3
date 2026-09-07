@@ -38,7 +38,9 @@ SOFTWARE.
  *   use ANALOG GND instead of the normal GND
  */
 
+// TODO software debounce
 // TODO fader fetch/lock up/down marker
+// TODO disconnect()
 
 #ifndef EOS3_H
 #define EOS3_H
@@ -52,6 +54,8 @@ SOFTWARE.
 #include "Udp.h"
 #include "Client.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 #include <vector>
 using namespace std;
@@ -61,27 +65,17 @@ using namespace std;
 *******************************************************************************/
 
 // defines for SLIP
-const uint8_t END = 0xC0;
-const uint8_t ESC = 0xDB;
-const uint8_t ESC_END = 0xDC;
-const uint8_t ESC_ESC = 0xDD;
 
-// sepecial pins
-#define NO_PIN      0xFF
-#define VIRTUAL_PIN 0xFE
-
-// subscription
-#define SUBSCRIBE   (int32_t)1
-#define UNSUBSCRIBE (int32_t)0
 
 // fader definitions
-#define BUTTON_PRESS         (int32_t)1
-#define BUTTON_RELEASE       (int32_t)0
 #define FADER_UPDATE_RATE_MS 40 // update each 40ms
 #define FADER_THRESHOLD      4 // Jitter threshold of the faders
 
-// callback
+// callbacks
 typedef void (*cbptr)();
+typedef void (*cbptr2)(uint8_t);
+typedef void (*cbptr3)(int);
+
 
 /*******************************************************************************
  * General callback handlers functions
@@ -105,6 +99,11 @@ typedef enum Interface {
 	EOSUDP,
 	EOSTCP,
 	} interface_t;
+
+typedef enum Subscription {
+	UNSUBSCRIBE,
+	SUBSCRIBE
+	} subscribe_t;
 
 /**
  * @brief Button modes
@@ -188,6 +187,7 @@ typedef enum CueType {
 	PENDING,
 	PREVIOUS
 	} cue_t;
+typedef void (*cbptrC)(cue_t);
 
 /**
  * @brief CueTypes
@@ -281,7 +281,7 @@ class eOS3 {
 		 * 
 		 * @param subscribe SUBSCRIBE or UNSUBSCRIBE
 		 */
-		void subscription(int32_t subscribe = SUBSCRIBE);
+		void subscription(subscribe_t subscribe = SUBSCRIBE);
 
 		/**
 		 * @brief Subscribe or unsubscribe a parameter for receive data
@@ -289,7 +289,7 @@ class eOS3 {
 		 * @param parameter for subscription
 		 * @param subscribe SUBSCRIBE or UNSUBSCRIBE
 		 */
-		void subscription(string parameter, int32_t subscribe = SUBSCRIBE);
+		void subscription(string parameter, subscribe_t subscribe = SUBSCRIBE);
 
 		/**
 		 * @brief Reset OSC settings
@@ -356,7 +356,7 @@ class eOS3 {
 		 * @param page page number, default = 1
 		 * @param flexi flexi state, default = false
 		 */
-		void initDS(button_t type, uint8_t count, uint8_t index = 1, uint16_t page = 1, bool flexi = false);
+		void initDS(button_t type, uint8_t buttons, uint8_t index = 1, uint16_t page = 1, bool flexi = false);
 
 	private:
 
@@ -732,6 +732,13 @@ class Wheel {
 		void wheelNumber(uint8_t wheel);
 
 		/**
+		 * @brief Optional callback, triggered when new wheel data
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
+
+		/**
 		 * @brief Parse for the parameter value
 		 * 
 		 * @return true parameter match
@@ -785,6 +792,7 @@ class Wheel {
 		bool act;
 		float val;
 		string param;
+		cbptr call = nullptr;
 	};
 
 /*******************************************************************************
@@ -806,6 +814,13 @@ class Encoder {
 		 */
 		Encoder(uint8_t pinA, uint8_t pinB, direction_t direction = FORWARD);
 		Encoder(direction_t direction = FORWARD);
+
+		/**
+		 * @brief Optional callback, triggered when new encoder data
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
 
 		/**
 		 * @brief set the parameter which should controlled by the encoder
@@ -877,6 +892,7 @@ class Encoder {
 		bool act;
 		uint16_t wheel;
 		float val;
+		cbptr call = nullptr;
 	};
 
 /*******************************************************************************
@@ -975,17 +991,35 @@ class DSTool {
 		 * @param pinUp pin of the Up button, not needed for virtual devices
 		 * @param pinDown pin of the Down button, not needed for virtual devices
 		 */
-		DSTool(uint8_t pinUp, uint8_t pinDown, uint8_t pinFlexi = NO_PIN);
+		DSTool(uint8_t pinUp, uint8_t pinDown);
 		DSTool();
+
+		void flexiButton(uint8_t pinFlexi);
+		void flexiButton();
 
 		/**
 		 * @brief Initialise a direct select bank, this must done after an established connection
 		 * 
 		 * @param type DS type CHAN, GROUP, IP, CP, FP, BP, PRESET, MACRO, FX, SNAPSHOT, MS, SCENE
-		 * @param count 
-		 * @param index 
+		 * @param count number of buttons
+		 * @param index (bank)
 		 */
-		void init(button_t type, uint8_t count, uint8_t index = 1);
+		void init(button_t type, uint8_t buttons, uint8_t index = 1);
+
+		/**
+		 * @brief Parse for DS feedback, must done after receiveOSC()
+		 * 
+		 * @return number of the parsed DS button, 0 if no data, -1 if page data
+		 */
+		int8_t parse();
+
+		/**
+		 * @brief Callbacks for DS page (including flexi state) and data
+		 * 
+		 * @param call function(uint8_t)
+		 */
+		void callbackPage(cbptr2 call);
+		void callbackData(cbptr2 call);
 
 		/**
 		 * @brief Set DS button type
@@ -1017,13 +1051,6 @@ class DSTool {
 		bool flexi();
 
 		/**
-		 * @brief Parse for DS feedback, must done after receiveOSC()
-		 * 
-		 * @return number of the parsed DS button, 0 if no data, -1 if page data
-		 */
-		int8_t parse();
-
-		/**
 		 * @brief Return the label of the DS button
 		 * 
 		 * @param number of the DS button
@@ -1044,24 +1071,33 @@ class DSTool {
 		 * 
 		 * @param upState up button state, optional for virtual input, TRUE if button press
 		 * @param downState down button state, optional for virtual input, TRUE if button press
+		 */
+		void updateButtons();
+		void updateButtons(bool stateUp, bool stateDown);
+
+		/**
+		 * @brief Update flexi button
+		 * 
 		 * @param flexiState flexi button state, optional for virtual input, TRUE if button press
 		 */
-		void update();
-		void update(bool stateUp, bool stateDown, bool stateFlexi);
+		void updateFlexi();
+		void updateFlexi(bool stateFlexi);
 
 	private:
 		uint8_t pinUp;
 		uint8_t pinUpLast;
 		uint8_t pinDown;
 		uint8_t pinDownLast;
-		uint8_t pinFlexi = NO_PIN;
+		uint8_t pinFlexi;
 		uint8_t pinFlexiLast;
-		uint8_t count;
+		uint8_t buttons;
 		uint8_t index = 1;
 		button_t type;
 		uint16_t currentPage = 1;
 		bool flexiState = false;
-		uint16_t currentPageLast[12] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}; // size
+		cbptr2 callPage;
+		cbptr2 callData;
+		uint16_t currentPageLast[12] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 		bool flexiStateLast[12] = {false, false, false, false, false, false, false, false, false, false, false, false};
 		string typeName;
 		string patternUp;
@@ -1072,7 +1108,7 @@ class DSTool {
 			uint16_t number;
 			string label;
 			};
-		struct DSData* dsData;
+		vector<DSData> dsData;
 	};
 
 
@@ -1152,29 +1188,37 @@ class Submaster {
 		uint8_t value();
 
 		/**
-		 * @brief Update the state of the Key button, must in loop()
+		 * @brief Update the analog input, must in loop()
 		 * 
 		 */
-		void update();
+		void updateAnalog();
 
 		/**
-		 * @brief Update the virtual analog input
+		 * @brief Update the virtual analog input, must in loop()
 		 * 
 		 * @param analog input 10 bits
 		 */
-		void update(int analog, bool fireState = false);
+		void updateAnalog(int analog);
 
 		/**
-		 * @brief Update the virtual value input
+		 * @brief Update the virtual value input, no jitter control, must in loop()
 		 * 
 		 * @param value input 0...100
 		 */
-		void updateValue(uint8_t value, bool fireState = false);
-	
+		void updateValue(uint8_t value);
+
+		/**
+		 * @brief Update the Fire button, must in loop()
+		 * 
+		 * @param fireState needed for virtual devices
+		 */
+		void updateFire();
+		void updateFire(bool fireState);
+
 	private:
-		uint8_t firePin = NO_PIN;
+		uint8_t firePin;
 		uint8_t fireLast;
-		uint8_t analogPin = NO_PIN;
+		uint8_t analogPin;
 		uint8_t valLast;
 		uint8_t val;
 		uint16_t sub;
@@ -1258,7 +1302,7 @@ class Fader {
 		 */
 		void jitter(uint8_t delta);
 
-		/** TODO
+		/** TODO int8_t up(1)/down(-1)
 		 * @brief Return the lock state
 		 * 
 		 * @return true OSC locked
@@ -1274,28 +1318,42 @@ class Fader {
 		void lock(bool state);
 
 		/**
-		 * @brief Update the state of the fader and fire/stop/load buttons, must in while() loop
+		 * @brief Update the fader, must in loop()
 		 * 
 		 */
-		void update();
+		void updateAnalog();
 
 		/**
-		 * @brief Update the state of the fader and fire/stop/load buttons, must in while() loop
+		 * @brief Update the virtual fader, for external A/D expanders ,must in loop ()
 		 * @brief For use with virtual inputs
 		 * 
 		 * @param value virtual input 10 bits
 		 */
-		void update(int value);
+		void updateAnalog(int value);
 
-		/** TODO
-		 * @brief Update the virtual value input
+		/**
+		 * @brief Update the virtual value input, no jitter control, for touch devices
 		 * 
 		 * @param value input 0...100
 		 */
-		void updateValue(uint8_t value, bool fireState = false);
+		void updateValue(uint8_t value);
+
+		/**
+		 * @brief Update the Fire / Stop / Load buttons
+		 * 
+		 * @param fireState only needed for virtual devices
+		 * @param stopState only needed for virtual devices
+		 * @param loadState only needed for virtual devices
+		 */
+		void updateFire();
+		void updateFire(bool fireState);
+		void updateStop();
+		void updateStop(bool stopState);
+		void updateLoad();
+		void updateLoad(bool loadState);
 
 	private:
-		uint8_t analogPin = NO_PIN;
+		uint8_t analogPin;
 		uint8_t fader;
 		uint8_t index;
 		int16_t analogLast;
@@ -1305,11 +1363,11 @@ class Fader {
 		uint8_t fetchValue;
 		uint8_t delta;
 		uint32_t updateTime;
-		uint8_t firePin = NO_PIN;
+		uint8_t firePin;
 		uint8_t fireLast;
-		uint8_t stopPin = NO_PIN;
+		uint8_t stopPin;
 		uint8_t stopLast;
-		uint8_t loadPin = NO_PIN;
+		uint8_t loadPin;
 		uint8_t loadLast;
 		string patternFader;
 		string patternFire;
@@ -1354,11 +1412,14 @@ class FaderTool {
 		int8_t parse();
 
 		/**
-		 * @brief Get the console value of a fader, needed for synchronize with console
+		 * @brief Callback for Fader page, name, range and value
 		 * 
-		 * @return int8_t number of actual parsed fader value, 0 no data
+		 * @param call function(uint8_t)
 		 */
-		int8_t parseValue();
+		void callbackPage(cbptr2 call);
+		void callbackName(cbptr2 call);
+		void callbackRange(cbptr2 call);
+		void callbackValue(cbptr2 call);
 
 		/**
 		 * @brief Return the current page number
@@ -1427,18 +1488,21 @@ class FaderTool {
 		uint8_t pinDown;
 		uint8_t pinUpLast;
 		uint8_t pinDownLast;
-		uint8_t index = 1;
-		uint8_t faders = 10;
+		uint8_t index;
+		uint8_t faders;
 		uint8_t currentPage = 1;
+		cbptr2 callPage;
+		cbptr2 callName;
+		cbptr2 callRange;
+		cbptr2 callValue;
 		struct FaderData {
 			fader_t faderType;
 			uint8_t value;
-			uint16_t typeNumber;
 			int32_t min;
 			int32_t max;
 			string label;
 			};
-		struct FaderData* faderData;
+		vector<FaderData> faderData;
 		cbptr call = nullptr;
 		string patternUp;
 		string patternDown;
@@ -1469,19 +1533,26 @@ class SelectParameter {
 		SelectParameter(uint8_t encoders);
 
 		/**
+		 * @brief Add an optional callback function, the callback is triggered when page is changed
+		 * 
+		 * @param call function()
+		 */
+		void callbackPage(cbptr call);
+
+		/**
+		 * @brief Callback for encoder number, the callback is triggered when encoder data change
+		 * 
+		 * @param call function(uint8_t)
+		 */
+		void callbackEncoder(cbptr2 call);
+
+		/**
 		 * @brief Set the name of a parameter by index
 		 * 
 		 * @param name parameter name
 		 * @param alias parameter alias name
 		 */
 		void parameter(string parameter, string alias = "");
-
-		/**
-		 * @brief Add an optional callback function, the callback is triggered when page is changed
-		 * 
-		 * @param callback pointer to the callback function 
-		 */
-		void callback(cbptr callback);
 
 		/**
 		 * @brief Parse the incoming OSC message for value updates use subsription()
@@ -1573,7 +1644,8 @@ class SelectParameter {
 		vector<Wheel> param;
 		uint8_t pagesCount;
 		uint8_t currentPage;
-		cbptr call = nullptr;
+		cbptr callPage = nullptr;
+		cbptr2 callEncoder = nullptr;
 	};
 
 /*******************************************************************************
@@ -1601,19 +1673,26 @@ class SelectCategory {
 		SelectCategory( uint8_t encoders);
 
 		/**
+		 * @brief Add an optional callback function, the callback is triggered when page is changed
+		 * 
+		 * @param call function()
+		 */
+		void callbackPage(cbptr call);
+
+		/**
+		 * @brief Callback for encoder number, the callback is triggered when encoder data change
+		 * 
+		 * @param call function(uint8_t)
+		 */
+		void callbackEncoder(cbptr2 call);
+
+		/**
 		 * @brief Set the name of a parameter by index
 		 * 
 		 * @param name parameter name
 		 * @param alias parameter alias name
 		 */
 		void parameter(category_t category, string parameter, string alias = "");
-
-		/**
-		 * @brief Add an optional callback function, the callback is triggered when page is changed
-		 * 
-		 * @param callback pointer to the callback function 
-		 */
-		void callback(cbptr callback);
 
 		/**
 		 * @brief Parse the incoming OSC message for value updates use subsription()
@@ -1748,7 +1827,8 @@ class SelectCategory {
 			string alias;
 			};
 		vector<Wheel> param[6];
-		cbptr call = nullptr;
+		cbptr callPage = nullptr;
+		cbptr2 callEncoder = nullptr;
 	};
 
 /*******************************************************************************
@@ -1774,6 +1854,20 @@ class SelectDynamic {
 		 */
 		SelectDynamic(uint8_t pinIntens, uint8_t pinFocus, uint8_t pinColor, uint8_t pinImage, uint8_t pinForm, uint8_t pinShutter, uint8_t encoders);
 		SelectDynamic(uint8_t encoders);
+
+		/**
+		 * @brief Add an optinal callback function, the callback is triggered when page or category is changed
+		 * 
+		 * @param call function()
+		 */
+		void callbackPage(cbptr call);
+
+		/**
+		 * @brief Callback for encoder number, the callback is triggered when encoder data change
+		 * 
+		 * @param call function(uint8_t)
+		 */
+		void callbackEncoder(cbptr2 call);
 
 		/**
 		 * @brief Get the name of a parameter by encoder
@@ -1822,13 +1916,6 @@ class SelectDynamic {
 		 * @return float 
 		 */
 		float value(uint8_t encoder);
-
-		/**
-		 * @brief Add an optinal callback function, the callback is triggered when page or category is changed
-		 * 
-		 * @param callback 
-		 */
-		void callback(cbptr call);
 
 		/**
 		 * @brief Parse the incoming OSC message for value updates
@@ -1939,7 +2026,8 @@ class SelectDynamic {
 			};
 		vector<Wheel> param;
 		vector<vector<string>> aliases;
-		cbptr call = nullptr;
+		cbptr callPage = nullptr;
+		cbptr2 callEncoder = nullptr;
 	};
 
 /*******************************************************************************
@@ -1967,6 +2055,13 @@ class Softkey {
 		uint8_t parse();
 
 		/**
+		 * @brief Callback for softkey
+		 * 
+		 * @param call function(uint8_t)
+		 */
+		void callback(cbptr2 call);
+
+		/**
 		 * @brief Get the softkey label
 		 * 
 		 * @param sk softkey number
@@ -1976,6 +2071,7 @@ class Softkey {
 
 	private:
 		string softkey[12];
+		cbptr2 call = nullptr;
 	};
 
 /**
@@ -1997,6 +2093,13 @@ class PanTilt {
 		 * @return false if no data
 		 */
 		bool parse();
+
+		/**
+		 * @brief Callback for Pan / Tilt
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
 
 		/**
 		 * @brief Get
@@ -2056,6 +2159,7 @@ class PanTilt {
 		float tiltMinVal;
 		float tiltMaxVal;
 		float tiltVal;
+		cbptr call = nullptr;
 	};
 
 /**
@@ -2077,6 +2181,13 @@ class XYZ {
 		 * @return false if no data
 		 */
 		bool parse();
+
+		/**
+		 * @brief Callback for XYZ data
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
 
 		/**
 		 * @brief Get
@@ -2112,6 +2223,7 @@ class XYZ {
 		float xVal;
 		float yVal;
 		float zVal;
+		cbptr call = nullptr;
 	};
 
 /**
@@ -2133,6 +2245,13 @@ class HueSat {
 		 * @return false if no data
 		 */
 		bool parse();
+
+		/**
+		 * @brief Callback for HS data
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
 
 		/**
 		 * @brief Get
@@ -2194,6 +2313,7 @@ class HueSat {
 		uint16_t color565Val;
 		float hueVal;
 		float saturationVal;
+		cbptr call = nullptr;
 	};
 
 /**
@@ -2215,6 +2335,13 @@ class Channel {
 		 * @return false if no data
 		 */
 		bool parse();
+
+		/**
+		 * @brief Callback for Channel data
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
 
 		/**
 		 * @brief Get the Channel string
@@ -2257,6 +2384,7 @@ class Channel {
 		string val;
 		string typ;
 		string dmx;
+		cbptr call = nullptr;
 	};
 
 /**
@@ -2281,6 +2409,13 @@ class Command {
 		bool parse();
 
 		/**
+		 * @brief Callback for Command Line
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
+
+		/**
 		 * @brief Get the Command Line string
 		 * 
 		 * @return string command line string
@@ -2289,6 +2424,7 @@ class Command {
 
 	private:
 		string commandString;
+		cbptr call = nullptr;
 	};
 
 /**
@@ -2309,6 +2445,13 @@ class Cue {
 		 * @return cue_t 
 		 */
 		cue_t parse();
+
+		/**
+		 * @brief Callback for Cue data
+		 * 
+		 * @param call function(TODO)
+		 */
+		void callback(cbptrC call);
 
 		/**
 		 * @brief Get the complete cue text
@@ -2370,6 +2513,7 @@ class Cue {
 			cue_t type;
   	};
 		struct CueData cuedata[3];
+		cbptrC call = nullptr;
 	};
 
 /**
@@ -2412,10 +2556,17 @@ class Version {
 		 */
 		bool parse();
 
+		/**
+		 * @brief Callback for version data
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
+
 	private:
 		string softwareVersion;
 		string libraryVersion;
-
+		cbptr call = nullptr;
 	};
 
 /**
@@ -2439,6 +2590,13 @@ class User {
 		bool parse();
 
 		/**
+		 * @brief Callback for user number
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
+
+		/**
 		 * @brief Get the user number
 		 * 
 		 * @return uint16_t user number
@@ -2447,7 +2605,8 @@ class User {
 
 	private:
 		uint16_t userNumber;
-};
+		cbptr call = nullptr;
+	};
 
 /**
  * @brief Class for parsing the name of the showfile
@@ -2470,6 +2629,13 @@ class Show {
 		bool parse();
 
 		/**
+		 * @brief Callback for show name
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
+
+		/**
 		 * @brief Get the show name
 		 * 
 		 * @return string show name
@@ -2478,6 +2644,7 @@ class Show {
 
 	private:
 		string showName;
+		cbptr call = nullptr;
 	};
 
 /**
@@ -2501,6 +2668,13 @@ class EventState {
 		bool parse();
 
 		/**
+		 * @brief Callback for eventState
+		 * 
+		 * @param call function()
+		 */
+		void callback(cbptr call);
+
+		/**
 		 * @brief Get the event state as a string
 		 * 
 		 * @return string event state BLIND / LIVE
@@ -2509,6 +2683,7 @@ class EventState {
 
 	private:
 		uint8_t eventState;
+		cbptr call = nullptr;
 	};
 
 /*******************************************************************************
@@ -2536,13 +2711,13 @@ string patternTypeString(button_t type, string strng);
  * @brief Create a DS pattern for initialization
  * 
  * @param type button type 
- * @param count number of DS buttons
+ * @param buttons number of DS buttons
  * @param index index number, default = 1
  * @param page page number, default = 1
  * @param flexi flexi state, default = false
  * @return string 
  */
-string patternDS(button_t type, uint8_t count, uint8_t index = 1, uint16_t page = 1, bool flexi = false);
+string patternDS(button_t type, uint8_t buttons, uint8_t index = 1, uint16_t page = 1, bool flexi = false);
 
 /**
  * @brief Create a fader pattern for initialization
@@ -2649,25 +2824,6 @@ class OSC {
 		 * @param strng String
 		 */
 		void message(string pattern, string strng);
-
-		/**
-		 * @brief Create a simple message with one MIDI argument and send it
-		 * 
-		 * @param pattern OSC address
-		 * @param port MIDI port number
-		 * @param status MIDI status byte
-		 * @param data1 MIDI data 1 byte
-		 * @param data2 MIDI data 2 byte
-		 */
-		void message(string pattern, uint8_t port, uint8_t status, uint8_t data1, uint8_t data2);
-
-		/**
-		 * @brief Create a simple message with one Timetag argument and send it
-		 * 
-		 * @param pattern OSC address
-		 * @param timetag 64bit NTP time (32bit MSB seconds, 32bit LSB fractional)
-		 */
-		void message(string pattern, uint64_t timetag);
 
 		/**
 		 * @brief Send the OSC message

@@ -1,13 +1,15 @@
 #include "eOS3.h"
-
-// TODO map function
-/*
-long map(long x, long in_min, long in_max, long out_min, long out_max) {
-	return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
-	}
-*/
+#include <cstdint>
 
 OSC osc;
+
+const uint8_t END = 0xC0;
+const uint8_t ESC = 0xDB;
+const uint8_t ESC_END = 0xDC;
+const uint8_t ESC_ESC = 0xDD;
+
+#define BUTTON_PRESS         (int32_t)1
+#define BUTTON_RELEASE       (int32_t)0
 
 // callbacks
 cbptr callbackConnect = connected;
@@ -67,12 +69,12 @@ void eOS3::filterClear() {
 	osc.message("/eos/filter/clear");
 	}
 
-void eOS3::subscription(int32_t subscribe) {
-	osc.message("/eos/subscribe", subscribe);
+void eOS3::subscription(subscribe_t subscribe) {
+	osc.message("/eos/subscribe", (int32_t)subscribe);
 	}
 
-void eOS3::subscription(string parameter, int32_t subscribe) {
-	osc.message("/eos/subscribe/param/" + parameter, subscribe);
+void eOS3::subscription(string parameter, subscribe_t subscribe) {
+	osc.message("/eos/subscribe/param/" + parameter, (int32_t)subscribe);
 	}
 
 void eOS3::command(string cmd) {
@@ -107,8 +109,8 @@ void eOS3::initFaders(uint8_t faders, uint8_t index, uint8_t page) {
 	osc.message(patternFader(faders, index, page));
 	}
 
-void eOS3::initDS(button_t type, uint8_t count, uint8_t index, uint16_t page, bool flexi) {
-	osc.message(patternDS(type, count, index, page, flexi));
+void eOS3::initDS(button_t type, uint8_t buttons, uint8_t index, uint16_t page, bool flexi) {
+	osc.message(patternDS(type, buttons, index, page, flexi));
 	}
 
 /*******************************************************************************
@@ -556,6 +558,10 @@ Wheel::Wheel(direction_t direction) {
 	this->direction = direction;
 	}
 
+void Wheel::callback(cbptr call) {
+	this->call = call;
+	}
+
 void Wheel::wheelNumber(uint8_t wheel) {
 	this->wheel = wheel;
 	}
@@ -568,6 +574,7 @@ bool Wheel::parse() {
 				param = "";
 				val = 0.0f;
 				act = false;
+				if (call != nullptr) call();
 				return true;
 				}
 			}
@@ -575,6 +582,7 @@ bool Wheel::parse() {
 			param = osc.getString(1).substr(0, osc.getString(1).rfind('[') - 2);
 			val = osc.getFloat(3);
 			act = true;
+			if (call != nullptr) call();
 			return true;
 			}
 		}
@@ -675,6 +683,10 @@ Encoder::Encoder(direction_t direction) {
 	this->direction = direction;
 	}
 
+void Encoder::callback(cbptr call) {
+	this->call = call;
+	}
+
 void Encoder::parameter(string param, string alias) {
 	this->param = param;
 	paramAlias = alias;
@@ -701,6 +713,7 @@ bool Encoder::parse() {
 				wheel = 0;
 				val = 0.0f;
 				act = false;
+				if (call != nullptr) call();
 				return true;
 				}
 			}
@@ -709,12 +722,14 @@ bool Encoder::parse() {
 			wheel = 0;
 			val = 0.0f;
 			act = false;
+			if (call != nullptr) call();
 			return true;
 			}
 		if (parameter == param) {
 			val = osc.getFloat(3);
 			act = true;
 			wheel = whl;
+			if (call != nullptr) call();
 			return true;
 			}
 		}
@@ -923,38 +938,41 @@ void DS::update(bool state) {
  * Direct select handle class
 *******************************************************************************/
 
-DSTool::DSTool(uint8_t pinUp, uint8_t pinDown, uint8_t pinFlexi) {
+DSTool::DSTool(uint8_t pinUp, uint8_t pinDown) {
 	this->pinUp = pinUp;
 	pinMode(pinUp, INPUT_PULLUP);
 	pinUpLast = digitalRead(pinUp);
 	this->pinDown = pinDown;
 	pinMode(pinDown, INPUT_PULLUP);
 	pinDownLast = digitalRead(pinDown);
-	if (pinFlexi != NO_PIN) {
-		this->pinFlexi = pinFlexi;
-		pinMode(pinFlexi, INPUT_PULLUP);
-		pinFlexiLast = digitalRead(pinFlexi);
-		}
 	}
 
 DSTool::DSTool() {
 	}
 
-void DSTool::init(button_t type, uint8_t count, uint8_t index) {
+void DSTool::flexiButton(uint8_t pinFlexi) {
+	this->pinFlexi = pinFlexi;
+	pinMode(pinFlexi, INPUT_PULLUP);
+	pinFlexiLast = digitalRead(pinFlexi);
+	}
+
+void DSTool::flexiButton() {}
+
+void DSTool::init(button_t type, uint8_t buttons, uint8_t index) {
 	this->type = type;
-	this->count = count;
+	this->buttons = buttons;
 	this->index = index;
-	dsData = new DSData[count];
+	dsData.resize(buttons);
 	patternUp = "/eos/ds/" + to_string(index) + "/page/1";
 	patternDown = "/eos/ds/" + to_string(index) + "/page/-1";
 	patternSearchButton = "/eos/out/ds/" + to_string(index) + '/';
 	patternSearchPage = "/eos/out/ds/" + to_string(index);
-	osc.message(patternDS(type, count, index, currentPageLast[type], flexiStateLast[type]));
+	osc.message(patternDS(type, buttons, index, currentPageLast[type], flexiStateLast[type]));
 	}
 
 void DSTool::typeDS(button_t type) {
 	this->type = type;
-	osc.message(patternDS(type, count, index, currentPageLast[type], flexiStateLast[type]));
+	osc.message(patternDS(type, buttons, index, currentPageLast[type], flexiStateLast[type]));
 	}
 
 int8_t DSTool::parse() {
@@ -974,6 +992,7 @@ int8_t DSTool::parse() {
 			}
 		currentPageLast[type] = currentPage;
 		flexiStateLast[type] = flexiState;
+		if (callPage != nullptr) callPage(currentPage);
 		return -1;
 		}
 	
@@ -987,17 +1006,30 @@ int8_t DSTool::parse() {
 			}
 		dsData[ds - 1].label = label;
 		dsData[ds - 1].number = stoi(osc.getString(2));
+		if (callData != nullptr) callData(ds);
 		return ds;
 		}
 	return 0;
 	}
 
+void DSTool::callbackPage(cbptr2 call) {
+	callPage = call;
+	}
+
+void DSTool::callbackData(cbptr2 call) {
+	callData = call;
+	}
+
 string DSTool::label(uint8_t number) {
-	return dsData[number - 1].label;
+	if (number <= dsData.size())
+		return dsData[number - 1].label;
+	return "";
 	}
 
 uint16_t DSTool::number(uint8_t number) {
-	return dsData[number - 1].number;
+	if (number <= dsData.size())
+		return dsData[number - 1].number;
+	return 0;
 	}
 
 string DSTool::typeDS() {
@@ -1012,7 +1044,7 @@ bool DSTool::flexi() {
 	return flexiState;
 	}
 
-void DSTool::update() {
+void DSTool::updateButtons() {
 	if (state2nd || state3rd) return;
 	if (digitalRead(pinUp) != pinUpLast) {
 		if (pinUpLast == false) pinUpLast = true;
@@ -1031,22 +1063,9 @@ void DSTool::update() {
 			}
 		return;
 		}
-
-	if (pinFlexi != NO_PIN || pinFlexi != VIRTUAL_PIN) {
-		if (digitalRead(pinFlexi) != pinFlexiLast) {
-			if (pinFlexiLast == false) pinFlexiLast = true;
-			else {
-				pinFlexiLast = false;
-				flexiState = !flexiState;
-				currentPage = 1;
-				osc.message(patternDS(type, count, index, currentPage, flexiState));
-				}
-			return;
-			}
-		}
 	}
 
-void DSTool::update(bool stateUp, bool stateDown, bool stateFlexi) {
+void DSTool::updateButtons(bool stateUp, bool stateDown) {
 	if (state2nd || state3rd) return;
 	if (stateUp != pinUpLast) {
 		if (pinUpLast == false) {
@@ -1065,16 +1084,31 @@ void DSTool::update(bool stateUp, bool stateDown, bool stateFlexi) {
 		else pinDownLast = false;
 		return;
 		}
+	}
 
+void DSTool::updateFlexi() {
+	if (digitalRead(pinFlexi) != pinFlexiLast) {
+		if (pinFlexiLast == false) pinFlexiLast = true;
+		else {
+			pinFlexiLast = false;
+			flexiState = !flexiState;
+			currentPage = 1;
+			osc.message(patternDS(type, buttons, index, currentPage, flexiState));
+			}
+		return;
+		}
+	}
+
+void DSTool::updateFlexi(bool stateFlexi) {
 	if (stateFlexi != pinFlexiLast) {
 		if (pinFlexiLast == false) {
 			pinFlexiLast = true;
 			flexiState = !flexiState;
 			currentPage = 1;
-			osc.message(patternDS(type, count, index, 1, flexiState));
+			osc.message(patternDS(type, buttons, index, 1, flexiState));
 			}
 		else pinFlexiLast = false;
-		return;
+	return;
 		}
 	}
 
@@ -1149,11 +1183,14 @@ void Submaster::fireButton(uint8_t firePin) {
 	}
 
 void Submaster::fireButton() {
-	this->firePin = VIRTUAL_PIN;
 	patternFire = "/eos/sub/" + to_string(sub) + "/fire";
 	}
 
-void Submaster::update() {
+void Submaster::callback(cbptr call) {
+	this->call = call;
+	}
+
+void Submaster::updateAnalog() {
 	if ((updateTime + FADER_UPDATE_RATE_MS) < millis()) {
 		int raw = analogRead(analogPin);
   	if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
@@ -1167,22 +1204,9 @@ void Submaster::update() {
 			}
 		updateTime = millis();
 		}
-
-	if (firePin != NO_PIN && firePin != VIRTUAL_PIN) {
-		if (digitalRead(firePin) != fireLast) {
-			if (fireLast == false) {
-				fireLast = true;
-				osc.message(patternFire, BUTTON_RELEASE);
-				}
-			else {
-				fireLast = false;
-				osc.message(patternFire, BUTTON_PRESS);
-				}
-			}
-		}
 	}
 
-void Submaster::update(int analog, bool fireState) {
+void Submaster::updateAnalog(int analog) {
 	if ((updateTime + FADER_UPDATE_RATE_MS) < millis()) {
 		int raw = analog;
   	if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
@@ -1196,62 +1220,38 @@ void Submaster::update(int analog, bool fireState) {
 			}
 		updateTime = millis();
 		}
-
-	if (firePin != NO_PIN && firePin != VIRTUAL_PIN) {
-		if (digitalRead(firePin) != fireLast) {
-			if (fireLast == false) {
-				fireLast = true;
-				osc.message(patternFire, BUTTON_RELEASE);
-				}
-			else {
-				fireLast = false;
-				osc.message(patternFire, BUTTON_PRESS);
-				}
-			}
-		}
-	if (firePin == VIRTUAL_PIN) {
-		if(fireState != fireLast) {
-			if (fireLast == LOW) {
-				fireLast = HIGH;
-				osc.message(patternFire, BUTTON_PRESS);
-				}
-			else {
-				fireLast = LOW;
-				osc.message(patternFire, BUTTON_RELEASE);
-				}
-			}
-		}
 	}
 
-void Submaster::updateValue(uint8_t value, bool fireState) {
+void Submaster::updateValue(uint8_t value) {
 	if ((updateTime + FADER_UPDATE_RATE_MS) < millis()) {
 		osc.message(patternSub, (value / 100.0f));
 		if (call != nullptr) call();
 		updateTime = millis();
 		}
+	}
 
-	if (firePin != NO_PIN && firePin != VIRTUAL_PIN) {
-		if (digitalRead(firePin) != fireLast) {
-			if (fireLast == false) {
-				fireLast = true;
-				osc.message(patternFire, BUTTON_RELEASE);
-				}
-			else {
-				fireLast = false;
-				osc.message(patternFire, BUTTON_PRESS);
-				}
+void Submaster::updateFire() {
+	if (digitalRead(firePin) != fireLast) {
+		if (fireLast == false) {
+			fireLast = true;
+			osc.message(patternFire, BUTTON_RELEASE);
+			}
+		else {
+			fireLast = false;
+			osc.message(patternFire, BUTTON_PRESS);
 			}
 		}
-	if (firePin == VIRTUAL_PIN) {
-		if(fireState != fireLast) {
-			if (fireLast == LOW) {
-				fireLast = HIGH;
-				osc.message(patternFire, BUTTON_PRESS);
-				}
-			else {
-				fireLast = LOW;
-				osc.message(patternFire, BUTTON_RELEASE);
-				}
+	}
+
+void Submaster::updateFire(bool fireState) {
+	if(fireState != fireLast) {
+		if (fireLast == LOW) {
+			fireLast = HIGH;
+			osc.message(patternFire, BUTTON_PRESS);
+			}
+		else {
+			fireLast = LOW;
+			osc.message(patternFire, BUTTON_RELEASE);
 			}
 		}
 	}
@@ -1279,36 +1279,33 @@ void Fader::fireButton(uint8_t firePin) {
 	this->firePin = firePin;
 	pinMode(firePin, INPUT_PULLUP);
 	fireLast = digitalRead(firePin);
-	patternFader = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/fire";
+	patternFire = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/fire";
 	}
 
 void Fader::fireButton() {
-	this->firePin = VIRTUAL_PIN;
-	patternFader = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/fire";
+	patternFire = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/fire";
 	}
 
 void Fader::stopButton(uint8_t stopPin) {
 	this->stopPin = stopPin;
 	pinMode(stopPin, INPUT_PULLUP);
 	stopLast = digitalRead(stopPin);
-	patternFader = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/stop";
+	patternStop = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/stop";
 	}
 
 void Fader::stopButton() {
-	this->stopPin = VIRTUAL_PIN;
-	patternFader = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/stop";
+	patternStop = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/stop";
 	}
 
 void Fader::loadButton(uint8_t loadPin) {
 	this->loadPin = loadPin;
 	pinMode(loadPin, INPUT_PULLUP);
 	loadLast = digitalRead(loadPin);
-	patternFader = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/load";
+	patternLoad = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/load";
 	}
 
 void Fader::loadButton() {
-	this->loadPin = VIRTUAL_PIN;
-	patternFader = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/load";
+	patternLoad = "/eos/fader/" + to_string(index) + "/" + to_string(fader) + "/load";
 	}
 
 void Fader::callback(cbptr call) {
@@ -1336,7 +1333,7 @@ void Fader::lock(bool state) {
 	lockState = state;
 	}
 
-void Fader::update() {
+void Fader::updateAnalog() {
 	if ((updateTime + FADER_UPDATE_RATE_MS) < millis()) {
 		int raw = analogRead(analogPin);
   	if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
@@ -1354,48 +1351,120 @@ void Fader::update() {
   	  	}
 			}
 		updateTime = millis();
-		}	
-
-	if (firePin != NO_PIN && firePin != VIRTUAL_PIN) {
-		if (digitalRead(firePin) != fireLast) {
-			if (fireLast == false) {
-				fireLast = true;
-				osc.message(patternFire, BUTTON_RELEASE);
-				}
-			else {
-				fireLast = false;
-				osc.message(patternFire, BUTTON_PRESS);
-				}
-			}
 		}
+	}
 
-	if (stopPin != NO_PIN && stopPin != VIRTUAL_PIN) {
-		if (digitalRead(stopPin) != stopLast) {
-			if (stopLast == false) {
-				stopLast = true;
-				osc.message(patternStop, BUTTON_RELEASE);
-				}
-			else {
-				stopLast = false;
-				osc.message(patternStop, BUTTON_PRESS);
-				}
+void Fader::updateAnalog(int value) {
+	if ((updateTime + FADER_UPDATE_RATE_MS) < millis()) {
+		int raw = value;
+  	if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
+  	  analogLast = raw;
+			val = map(analogLast, FADER_THRESHOLD, 1023 - FADER_THRESHOLD, 0, 100);
+			if (valLast != val) {
+  	    valLast = val;
+				if (lockState == true) {
+					if ((valLast <= fetchValue + delta) && (valLast >= fetchValue - delta)) lockState = false; 
+					}
+				if (lockState == false) {
+					osc.message(patternFader, (val / 100.0f));
+					if (call != nullptr) call();
+					}
+  	  	}
 			}
+		updateTime = millis();
 		}
+	}
 
-	if (loadPin != NO_PIN && loadPin != VIRTUAL_PIN) {
-		if (digitalRead(loadPin) != loadLast) {
-			if (loadLast == false) {
-				loadLast = true;
-				osc.message(patternLoad, BUTTON_RELEASE);
-				}
-			else {
-				fireLast = false;
-				osc.message(patternLoad, BUTTON_PRESS);
-				}
+void Fader::updateValue(uint8_t value) {
+	if ((updateTime + FADER_UPDATE_RATE_MS) < millis()) {
+		if (lockState == true) {
+			if ((valLast <= fetchValue + delta) && (valLast >= fetchValue - delta)) lockState = false; 
+			}
+		if (lockState == false) {
+			osc.message(patternFader, (value / 100.0f));
+			if (call != nullptr) call();
+			}
+		updateTime = millis();
+		}
+	}
+
+void Fader::updateFire() {
+	if (digitalRead(firePin) != fireLast) {
+		if (fireLast == false) {
+			fireLast = true;
+			osc.message(patternFire, BUTTON_RELEASE);
+			}
+		else {
+			fireLast = false;
+			osc.message(patternFire, BUTTON_PRESS);
 			}
 		}
 	}
 
+void Fader::updateFire(bool fireState) {
+	if(fireState != fireLast) {
+		if (fireLast == LOW) {
+			fireLast = HIGH;
+			osc.message(patternFire, BUTTON_PRESS);
+			}
+		else {
+			fireLast = LOW;
+			osc.message(patternFire, BUTTON_RELEASE);
+			}
+		}
+	}
+
+void Fader::updateStop() {
+	if (digitalRead(stopPin) != stopLast) {
+		if (stopLast == false) {
+			stopLast = true;
+			osc.message(patternStop, BUTTON_RELEASE);
+			}
+		else {
+			stopLast = false;
+			osc.message(patternStop, BUTTON_PRESS);
+			}
+		}
+	}
+
+void Fader::updateStop(bool stopState) {
+	if(stopState != fireLast) {
+		if (stopLast == LOW) {
+			stopLast = HIGH;
+			osc.message(patternStop, BUTTON_PRESS);
+			}
+		else {
+			stopLast = LOW;
+			osc.message(patternStop, BUTTON_RELEASE);
+			}
+		}
+	}
+
+void Fader::updateLoad() {
+	if (digitalRead(loadPin) != loadLast) {
+		if (loadLast == false) {
+			loadLast = true;
+			osc.message(patternLoad, BUTTON_RELEASE);
+			}
+		else {
+			fireLast = false;
+			osc.message(patternLoad, BUTTON_PRESS);
+			}
+		}
+	}
+
+void Fader::updateLoad(bool loadState) {
+	if(loadState != fireLast) {
+		if (loadLast == LOW) {
+			loadLast = HIGH;
+			osc.message(patternLoad, BUTTON_PRESS);
+			}
+		else {
+			loadLast = LOW;
+			osc.message(patternLoad, BUTTON_RELEASE);
+			}
+		}
+	}
 
 /*******************************************************************************
  * Fader handling class
@@ -1415,7 +1484,7 @@ FaderTool::FaderTool() {}
 void FaderTool::init(uint8_t faders, uint8_t index) {
 	this->faders = faders;
 	this->index = index;
-	faderData = new FaderData[faders];
+	faderData.resize(faders);
 	osc.message(patternFader(10, index, currentPage));
 	patternUp = "/eos/fader/" + to_string(index) + "/page/1";
 	patternDown = "/eos/fader/" + to_string(index) + "/page/-1";
@@ -1428,6 +1497,7 @@ void FaderTool::init(uint8_t faders, uint8_t index) {
 int8_t FaderTool::parse() {
 	if (osc.getPattern().compare(patternSearchPage) == 0) {
 		currentPage = stoi(osc.getString(1));
+		if (callPage != nullptr) callPage(currentPage);
 		return -1;
 		}
 
@@ -1435,6 +1505,7 @@ int8_t FaderTool::parse() {
 		uint8_t fader = stoi(osc.getPattern().substr(osc.getPattern().rfind("/") + 1));
 		faderData[fader - 1].min = osc.getInt(1);
 		faderData[fader - 1].max = osc.getInt(2);
+		if (callRange != nullptr) callRange(fader);
 		return fader;
 		}
 
@@ -1459,19 +1530,32 @@ int8_t FaderTool::parse() {
 		else if (label.find("Global") == 0) faderData[fader].faderType = GFX;
 		else if (label.find("Man") == 0) faderData[fader].faderType = MANUAL;
 		faderData[fader - 1].label = label;
+		if (callName != nullptr) callName(fader);
 		return fader;
 		}
-
+	if (osc.getPattern().find(patternSearchValue) == 0) {
+		uint8_t fader = stoi(osc.getPattern().substr(osc.getPattern().rfind("/") + 1));
+		faderData[fader - 1].value = (uint8_t)(osc.getFloat(1) * 100);
+		if (callValue != nullptr) callValue(fader);
+		return fader;
+		}
 	return 0;
 	}
 
-int8_t FaderTool::parseValue() {
-	if (osc.getPattern().find(patternSearchValue) == 0) {
-		uint8_t fader = stoi(osc.getPattern().substr(osc.getPattern().find("/") + 1));
-		faderData[fader - 1].value = (uint8_t)(osc.getFloat(1) * 100);
-		return fader;
-		}
-	return 0;
+void FaderTool::callbackPage(cbptr2 call) {
+	callPage = call;
+	}
+
+void FaderTool::callbackName(cbptr2 call) {
+	callName = call;
+	}
+
+void FaderTool::callbackRange(cbptr2 call) {
+	callRange = call;
+	}
+
+void FaderTool::callbackValue(cbptr2 call) {
+	callValue = call;
 	}
 
 uint8_t FaderTool::page() {
@@ -1479,72 +1563,84 @@ uint8_t FaderTool::page() {
 	}
 
 uint8_t FaderTool::value(uint8_t fader) {
-	return faderData[fader - 1].value;
+	if (fader <= faderData.size())
+		return faderData[fader - 1].value;
+	return 0;
 	}
 
 string FaderTool::label(uint8_t fader) {
-	return faderData[fader - 1].label;
+	if (fader <= faderData.size())
+		return faderData[fader - 1].label;
+	return "";
 	}
 
 uint16_t FaderTool::rangeMin(uint8_t fader) {
-	return faderData[fader - 1].min;
+	if (fader <= faderData.size())
+		return faderData[fader - 1].min;
+	return 0;
 	}
 
 uint16_t FaderTool::rangeMax(uint8_t fader) {
-	return faderData[fader - 1].max;
+	if (fader <= faderData.size())
+		return faderData[fader - 1].max;
+	return 0;
 	}
 
 fader_t FaderTool::type(uint8_t fader) {
-	return faderData[fader].faderType;
+	if (fader <= faderData.size())
+		return faderData[fader].faderType;
+	return (fader_t)0;
 	}
 
 string FaderTool::typeString(uint8_t fader) {
-	switch (faderData[fader].faderType) {
-		case UNMAPPED: {
-			return "Unmapped";
-			break;
+	if (fader <= faderData.size()) {
+		switch (faderData[fader].faderType) {
+			case UNMAPPED: {
+				return "Unmapped";
+				break;
+				}
+			case SUB: {
+				return "Submaster";
+				break;
+				}
+			case GM: {
+				return "Grand Master";
+				break;
+				}
+			case QL: {
+				return "Cue List";
+				break;
+				}
+			case PR: {
+				return "Preset";
+				break;
+				}
+			case IPR: {
+				return "Intensity Preset";
+				break;
+				}
+			case FPR: {
+				return "Focus Preset";
+				break;
+				}
+			case CPR: {
+				return "Color Preset";
+				break;
+				}
+			case BPR: {
+				return "Beam Preset";
+				break;
+				}
+			case GFX: {
+				return "Global FX";
+				break;
+				}
+			case MANUAL: {
+				return "Man Time";
+				break;
+				}
+			default: {}
 			}
-		case SUB: {
-			return "Submaster";
-			break;
-			}
-		case GM: {
-			return "Grand Master";
-			break;
-			}
-		case QL: {
-			return "Cue List";
-			break;
-			}
-		case PR: {
-			return "Preset";
-			break;
-			}
-		case IPR: {
-			return "Intensity Preset";
-			break;
-			}
-		case FPR: {
-			return "Focus Preset";
-			break;
-			}
-		case CPR: {
-			return "Color Preset";
-			break;
-			}
-		case BPR: {
-			return "Beam Preset";
-			break;
-			}
-		case GFX: {
-			return "Global FX";
-			break;
-			}
-		case MANUAL: {
-			return "Man Time";
-			break;
-			}
-		default: {}
 		}
 	return "";
 	}
@@ -1625,6 +1721,14 @@ SelectParameter::SelectParameter(uint8_t encoders) {
 	for (uint8_t i = 0; i < encoders; i++) idx[i] = i;
 	}
 
+void SelectParameter::callbackPage(cbptr call) {
+	this->callPage = call;
+	}
+
+void SelectParameter::callbackEncoder(cbptr2 call) {
+	this->callEncoder= call;
+	}
+
 void SelectParameter::parameter(string parameter, string alias) {
 	Wheel add;
 	add.parameter = parameter;
@@ -1640,10 +1744,6 @@ void SelectParameter::parameter(string parameter, string alias) {
 		}
 	}
 
-void SelectParameter::callback(cbptr call) {
-	this->call = call;
-	}
-
 uint8_t SelectParameter::parse() {
 	if (osc.getPattern().find("/eos/out/active/wheel/") == 0) {
 		uint16_t whl = stoi(osc.getPattern().substr(osc.getPattern().rfind('/') + 1));
@@ -1654,7 +1754,10 @@ uint8_t SelectParameter::parse() {
 					param[i].wheel = 0;
 					param[i].active = false;
 					for (uint8_t j = 0; j < encoders; j++) {
-						if (i == idx[j]) return j + 1;
+						if (i == idx[j]) {
+							if (callEncoder != nullptr) callEncoder(j + 1);
+							return j + 1;
+							}
 						}
 					}
 				}
@@ -1667,7 +1770,10 @@ uint8_t SelectParameter::parse() {
 				param[i].wheel = 0;
 				param[i].active = false;
 				for (uint8_t j = 0; j < encoders; j++) {
-					if (i == idx[j]) return j + 1;
+					if (i == idx[j]) {
+						if (callEncoder != nullptr) callEncoder(j + 1);
+						return j + 1;
+						}
 					}
 				}
 			if (param[i].parameter == parameter) {
@@ -1675,7 +1781,10 @@ uint8_t SelectParameter::parse() {
 				param[i].wheel = whl;
 				param[i].active = true;
 				for (uint8_t j = 0; j < encoders; j++) {
-					if (i == idx[j]) return j + 1;
+					if (i == idx[j]) {
+						if (callEncoder != nullptr) callEncoder(j + 1);
+						return j + 1;
+						}
 					}
 				}
 			}
@@ -1736,7 +1845,7 @@ void SelectParameter::indexEncoder() {
 		idx[i] = ((currentPage - 1) * encoders) + i;
 		if (idx[i] >= parameterCount) idx[i] = -1;
 		}
-	if (call != nullptr) call();
+	if (callPage != nullptr) callPage();
 	}
 
 void SelectParameter::update() {
@@ -1841,6 +1950,14 @@ SelectCategory::SelectCategory(uint8_t encoders) {
 	categoryData[INTENSITY].currentPage = 1;
 	}
 
+void SelectCategory::callbackPage(cbptr call) {
+	this->callPage = call;
+	}
+
+void SelectCategory::callbackEncoder(cbptr2 call) {
+	this->callEncoder = call;
+	}
+
 void SelectCategory::parameter(category_t category, string parameter, string alias) {
 	Wheel add;
 	add.parameter = parameter;
@@ -1858,10 +1975,6 @@ void SelectCategory::parameter(category_t category, string parameter, string ali
 		}
 	}
 
-void SelectCategory::callback(cbptr call) {
-	this->call = call;
-	}
-
 uint8_t SelectCategory::parse() {
 	if (osc.getPattern().find("/eos/out/active/wheel/") == 0) {
 		uint16_t wheel = stoi(osc.getPattern().substr(osc.getPattern().rfind('/') + 1));
@@ -1875,7 +1988,10 @@ uint8_t SelectCategory::parse() {
 						param[k][i].wheel = 0;
 						param[k][i].active = false;
 						for (int j = 0; j < encoders; j++) {
-							if (i == idx[j]) return j + 1;
+							if (i == idx[j]) {
+								if (callEncoder != nullptr) callEncoder(j + 1);
+								return j + 1;
+								}
 							}
 						}
 					}
@@ -1899,7 +2015,10 @@ uint8_t SelectCategory::parse() {
 				param[category - 1][i].wheel = wheel;
 				param[category - 1][i].active = true;
 				for (int j = 0; j < encoders; j++) {
-					if (i == idx[j]) return j + 1;
+					if (i == idx[j]) {
+						if (callEncoder != nullptr) callEncoder(j + 1);
+						return j + 1;
+						}
 					}
 				}
 			}
@@ -1950,7 +2069,7 @@ void SelectCategory::indexEncoder(category_t category) {
 		idx[i] = ((categoryData[category].currentPage - 1) * encoders) + i;
 		if (idx[i] >= categoryData[category].parameters) idx[i] = -1;
 		}
-	if (call != nullptr) call();
+	if (callPage != nullptr) callPage();
 	}
 
 category_t SelectCategory::category() {
@@ -2028,7 +2147,7 @@ void SelectCategory::update(bool stateIntens, bool stateFocus, bool stateColor, 
 	if (state2nd || state3rd) return;
 	bool states[6] {stateIntens, stateFocus, stateColor, stateImage, stateForm, stateShutter}; 
 	for (uint8_t i = 0; i < 6; i++) {
-		if (states[i] != pinsLast[i]) { // TODO test
+		if (states[i] != pinsLast[i]) {
 			if (pinsLast[i] == false) {
 				pinsLast[i] = true;
 				}
@@ -2098,8 +2217,12 @@ SelectDynamic::SelectDynamic(uint8_t encoders) {
 	for (uint8_t i = 0; i < encoders; i++) idx[i] = -1;
 	}
 
-void SelectDynamic::callback(cbptr call) {
-	this->call = call;
+void SelectDynamic::callbackPage(cbptr call) {
+	this->callPage = call;
+	}
+
+void SelectDynamic::callbackEncoder(cbptr2 call) {
+	this->callEncoder = call;
 	}
 
 string SelectDynamic::parameter(uint8_t encoder) {
@@ -2209,7 +2332,7 @@ void SelectDynamic::indexCollect() {
 			idx[i] = -1;
 			}
 		}
-	if (call != nullptr) call();
+	if (callPage != nullptr) callPage();
 	}
 
 void SelectDynamic::indexEncoder(category_t category) {
@@ -2222,7 +2345,7 @@ void SelectDynamic::indexEncoder(category_t category) {
 			}
 		else idx[i] = -1;
 		}
-	if (call != nullptr) call();
+	if (callPage != nullptr) callPage();
 	}
 
 uint8_t SelectDynamic::parse() {
@@ -2241,7 +2364,10 @@ uint8_t SelectDynamic::parse() {
 		param[wheel - 1].value = osc.getFloat(3);
 		param[wheel - 1].parameter = parameter;
 		for (uint8_t j = 0; j < encoders; j++) {
-			if (wheel - 1 == idx[j]) return j + 1;
+			if (wheel - 1 == idx[j]) {
+				if (callEncoder != nullptr) callEncoder(j + 1);
+				return j + 1;
+				}
 			}
 		}
 	return 0;
@@ -2383,10 +2509,15 @@ void SelectDynamic::update(category_t category) {
 Softkey::Softkey() {
 	}
 
+void Softkey::callback(cbptr2 call) {
+	this->call = call;
+	}
+
 uint8_t Softkey::parse() {
-	if (osc.getPattern().compare("/eos/out/softkey/") == 0) {
+	if (osc.getPattern().find("/eos/out/softkey/") == 0) {
 		uint8_t idx = stoi(osc.getPattern().substr(osc.getPattern().rfind('/') + 1));
 		softkey[idx - 1] = osc.getString(1);
+		if (call != nullptr) call(idx);
 		return idx;
 		}
 	return 0;
@@ -2398,6 +2529,10 @@ string Softkey::label(uint8_t sk) {
 
 PanTilt::PanTilt() {}
 
+void PanTilt::callback(cbptr call) {
+	this->call = call;
+	}
+
 bool PanTilt::parse() {
 	if (osc.getPattern().compare("/eos/out/pantilt") == 0) {
 		if (osc.getTagSize()) activ = true;
@@ -2408,6 +2543,7 @@ bool PanTilt::parse() {
 		tiltMinVal = osc.getFloat(3);
 		tiltVal = osc.getFloat(6);
 		tiltMaxVal = osc.getFloat(4);
+		if (call != nullptr) call();
 		return true;
 		}
 	return false;
@@ -2443,6 +2579,10 @@ float PanTilt::tilt() {
 
 XYZ::XYZ() {}
 
+void XYZ::callback(cbptr call) {
+	this->call = call;
+	}
+
 bool XYZ::parse() {
 	if (osc.getPattern().compare("/eos/out/xyz") == 0) {
 		if (osc.getTagSize()) activ = true;
@@ -2450,6 +2590,7 @@ bool XYZ::parse() {
 		xVal = osc.getFloat(1);
 		yVal = osc.getFloat(2);
 		zVal = osc.getFloat(3);
+		if (call != nullptr) call();
 		return true;
 		}
 	return false;
@@ -2473,6 +2614,10 @@ float XYZ::z() {
 
 HueSat::HueSat() {}
 
+void HueSat::callback(cbptr call) {
+	this->call = call;
+	}
+
 bool HueSat::parse() {
 	if (osc.getPattern().compare("/eos/out/color/hs") == 0) {
 		if (osc.getTagSize()) activ = true;
@@ -2481,6 +2626,7 @@ bool HueSat::parse() {
 		saturationVal = osc.getFloat(2);
 		HStoRGB(hueVal, saturationVal);
 		color565Val = col565(redVal, greenVal, blueVal);
+		if (call != nullptr) call();
 		return true;
 		}
 	return false;
@@ -2580,6 +2726,10 @@ uint16_t HueSat::col565(uint8_t red, uint8_t green, uint8_t blue) {
 
 Channel::Channel() {}
 
+void Channel::callback(cbptr call) {
+	this->call = call;
+	}
+
 bool Channel::parse() {
 	if (osc.getPattern().compare("/eos/out/active/chan") == 0) {
 		channelString = osc.getString(1);
@@ -2588,6 +2738,7 @@ bool Channel::parse() {
 			val = "";
 			typ = "";
 			dmx = "";
+			if (call != nullptr) call();
 			return true;
 			}
 		int space = channelString.find(' ');
@@ -2601,12 +2752,14 @@ bool Channel::parse() {
 			val = "";
 			typ = "";
 			dmx = "";
+			if (call != nullptr) call();
 			return true;
 			}
 		// check if typ is empty -> EOS Channel List BUG 
 		if (bracketClose == (int)channelString.size() - 1) {
 			typ = "";
 			dmx = "";
+			if (call != nullptr) call();
 			return true;
 			}
 		if (at != -1) {
@@ -2617,6 +2770,7 @@ bool Channel::parse() {
 			typ = channelString.substr(bracketClose + 2);
 			dmx = "";
 			}
+		if (call != nullptr) call();
 		return true;
 		}
 	return false;
@@ -2644,9 +2798,14 @@ string Channel::address() {
 
 Command::Command() {}
 
+void Command::callback(cbptr call) {
+	this->call = call;
+	}
+
 bool Command::parse() {
 	if (osc.getPattern().compare("/eos/out/cmd") == 0) {
 		commandString = osc.getString(1);
+		if (call != nullptr) call();
 		return true;
 		}
 	return false;
@@ -2659,22 +2818,29 @@ string Command::command() {
 Cue::Cue() {
 	}
 
+void Cue::callback(cbptrC call) {
+	this->call = call;
+	}
+
 cue_t Cue::parse() {
 	if (osc.getPattern().compare("/eos/out/active/cue/text") == 0) {
 		cuedata[0].cueText = osc.getString(1);
 		parseData(0);
+		if (call != nullptr) call(ACTIVE);
 		return ACTIVE;
 		}
 
 	if (osc.getPattern().compare("/eos/out/pending/cue/text") == 0) {
-		cuedata[0].cueText = osc.getString(1);
+		cuedata[1].cueText = osc.getString(1);
 		parseData(1);
+		if (call != nullptr) call(PENDING);
 		return PENDING;
 		}
 	
 	if (osc.getPattern().compare("/eos/out/previous/cue/text") == 0) {
-		cuedata[0].cueText = osc.getString(1);
+		cuedata[2].cueText = osc.getString(1);
 		parseData(2);
+		if (call != nullptr) call(PREVIOUS);
 		return PREVIOUS;
 		}
 	return NODATA;
@@ -2817,6 +2983,10 @@ string Cue::progress(cue_t type) {
 
 Version::Version () {}
 
+void Version::callback(cbptr call) {
+	this->call = call;
+	}
+
 void Version::version() {
 	osc.message("/eos/get/version");
 	}
@@ -2825,6 +2995,7 @@ bool Version::parse() {
 	if (osc.getPattern().compare("/eos/out/get/version") == 0) {
 		softwareVersion = osc.getString(1);
 		libraryVersion = osc.getString(2);
+		if (call != nullptr) call();
 		return true;
 		}
 	return false;
@@ -2840,9 +3011,14 @@ string Version::library() {
 
 User::User() {}
 
+void User::callback(cbptr call) {
+	this->call = call;
+	}
+
 bool User::parse() {
 	if (osc.getPattern().compare("/eos/out/user") == 0) {
 		userNumber = osc.getInt(1);
+		if (call != nullptr) call();
 		return true;
 		}
 	return false;
@@ -2854,9 +3030,14 @@ uint16_t User::user() {
 
 Show::Show() {}
 
+void Show::callback(cbptr call) {
+	this->call = call;
+	}
+
 bool Show::parse() {
 	if (osc.getPattern().compare("/eos/out/show/name") == 0) {
 		showName = osc.getString(1);
+		if (call != nullptr) call();
 		return true;
 		}
 	return false;
@@ -2868,9 +3049,14 @@ string Show::name() {
 
 EventState::EventState() {}
 
+void EventState::callback(cbptr call) {
+	this->call = call;
+	}
+
 bool EventState::parse() {
 	if (osc.getPattern().compare("/eos/out/event/state") == 0 ) {
 		eventState = osc.getInt(1);
+		if (call != nullptr) call();
 		return true;
 		}
 	return false;
@@ -2989,7 +3175,7 @@ string patternTypeString(button_t type, string strng) {
 		return pattern;
 	}
 
-string patternDS(button_t type, uint8_t count, uint8_t index, uint16_t page, bool flexi) {
+string patternDS(button_t type, uint8_t buttons, uint8_t index, uint16_t page, bool flexi) {
 	string dsInit = "/eos/ds/";
 	dsInit += to_string(index);
 	switch (type) {
@@ -3046,7 +3232,7 @@ string patternDS(button_t type, uint8_t count, uint8_t index, uint16_t page, boo
 	if (flexi) dsInit += "flexi/";
 	dsInit += to_string(page);
 	dsInit += '/';
-	dsInit += to_string(count);
+	dsInit += to_string(buttons);
 	return dsInit;
 	}
 
