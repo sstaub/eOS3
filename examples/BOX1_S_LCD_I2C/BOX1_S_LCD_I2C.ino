@@ -25,6 +25,7 @@ Button2nd btn1_2nd(KEY, "Next");
 Button2nd btn2_2nd(KEY, "Last");
 Channel channel;
 Shift shift;
+Acceleration acc;
 Control2nd btn2nd;
 
 string selctionLast;
@@ -48,7 +49,7 @@ void setup() {
 	selection.parameter("Edge");
 	selection.parameter("Zoom");
 	selection.parameter("Iris");
-	selection.parameter("Diffusn");
+	selection.parameter("Diffusion");
 	selection.parameter("Red");
 	selection.parameter("Blue");
 	selection.parameter("Green");
@@ -73,6 +74,7 @@ void loop() {
 	// put update functions for buttons and encoders here
 	eos.update();
 	shift.update(key4.button(3));
+	acc.update(key4.button(4));
 	btn2nd.update(key4.button(4));
 	btn1_2nd.update(key4.button(1));
 	btn2_2nd.update(key4.button(2));
@@ -96,7 +98,7 @@ void maintain() {
 		lcd.clp(4, 1, 10);
 		if(selection.active(1)) {
 			lcd.locate(4, 1);
-			lcd.print(selection.value(1), 3);
+			lcd.printf("%.3f" , selection.value(1));
 			}
 		return;
 		}
@@ -105,7 +107,7 @@ void maintain() {
 		lcd.clp(4, 11, 10);
 		if(selection.active(2)) {
 			lcd.locate(4, 11);
-			lcd.print(selection.value(2), 3);
+			lcd.printf("%.3f" , selection.value(1));
 			}
 		return;
 		}
@@ -115,8 +117,8 @@ void maintain() {
 			selctionLast = channel.selection();
 			lcd.locate(1, 1);
 			lcd.clr(1);
-			lcd.print("Chan ");
-			lcd.print(channel.selection().c_str());
+			lcd.printf("Chan ");
+			lcd.printf("%.15s", channel.selection().c_str());
 			}
 		return;
 		}
@@ -151,28 +153,25 @@ void updateDisplay() {
 	enc2Button.parameter(selection.parameter(2));
 	lcd.clr(2);
 	lcd.locate(2, 1);
-	lcd.print("Page ");
-	lcd.print(selection.page());
-	lcd.print(" of ");
-	lcd.print(selection.pages());
+	lcd.printf("Page %d of %d", selection.page(), selection.pages());
 	lcd.clr(3);
 	lcd.locate(3, 1);
 	if (selection.alias(1) != "")
-		lcd.print(selection.alias(1).c_str());
+		lcd.printf("%s", selection.alias(1).c_str());
 	else
-		lcd.print(selection.parameter(1).c_str());
+		lcd.printf("%s", selection.parameter(1).c_str());
 	lcd.locate(3, 11);
 	if (selection.alias(2) != "")
-		lcd.print(selection.alias(2).c_str());
+		lcd.printf("%s", selection.alias(2).c_str());
 	else
-		lcd.print(selection.parameter(2).c_str());
+		lcd.printf("%s", selection.parameter(2).c_str());
 	lcd.clr(4);
 	if(selection.active(1)) {
 		lcd.locate(4, 1);
-		lcd.print(selection.value(1), 3);
+		lcd.printf("%.3f", selection.value(1));
 		}
 	if(selection.active(2)) {
 		lcd.locate(4, 11);
-		lcd.print(selection.value(2), 3);
+		lcd.printf("%.3f", selection.value(2));
 		}
 	}

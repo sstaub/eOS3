@@ -1,4 +1,4 @@
-// Simple example with 2 SeeSaw Encoder modules, 1 SeeSaw NeoKey 1x4 and an I2C LCD Display 4x20
+// Simple example with 2 SeeSaw Encoder modules, 2 SeeSaw NeoKey 1x4 and an I2C LCD Display 4x20
 
 #include "Arduino.h"
 #include "eOS3.h"
@@ -21,11 +21,16 @@ Encoder enc1(REVERSE);
 AbsoluteLevels enc1Button(HOME, PARAMETER);
 Encoder enc2(REVERSE);
 AbsoluteLevels enc2Button(HOME, PARAMETER);
-SelectCategory selection(2);
+SelectCategory category(2);
 Button2nd btn1_2nd(KEY, "Next");
 Button2nd btn2_2nd(KEY, "Last");
+Button2nd btn3_2nd(KEY, "Select_Last");
+Button2nd btn4_2nd(KEY, "Select_Manual");
+Button2nd btn5_2nd(KEY, "Select_Active");
+Button2nd btn6_2nd(KEY, "Clear");
 Channel channel;
 Shift shift;
+Acceleration acc;
 Control2nd btn2nd;
 
 void updateDisplay();
@@ -33,54 +38,70 @@ void updateDisplay();
 void setup() {
 	lcd.begin(LCD_ROWS, LCD_COLUMNS);
 	lcd.cls();
-	lcd.print("eOS3 v1.0.0");
+	lcd.printf("eOS3 v1.0.0");
 	lcd.locate(2, 1);
-	lcd.print("connecting ...");
+	lcd.printf("connecting ...");
 	encS1.begin(); // start I2C communication of encoder 1
 	encS2.begin(); // start I2C communication of encoder 2
 	keyA.begin(); // start I2C communication of key 1x4
 	keyB.begin(); // start I2C communication of key 1x4
-	selection.callback(updateDisplay);
-	selection.parameter(INTENSITY, "Intens");
-	selection.parameter(INTENSITY, "");
-	selection.parameter(FOCUS, "Pan");
-	selection.parameter(FOCUS, "Tilt");
-	selection.parameter(FORM, "Edge");
-	selection.parameter(FORM, "Zoom");
-	selection.parameter(FORM, "Iris");
-	selection.parameter(FORM, "Diffusn");
-	selection.parameter(COLOR, "Red");
-	selection.parameter(COLOR, "Blue");
-	selection.parameter(COLOR, "Green");
-	selection.parameter(COLOR, "White");
-	selection.parameter(COLOR, "Cyan");
-	selection.parameter(COLOR, "Magenta");
-	selection.parameter(COLOR, "Yellow");
-	selection.parameter(COLOR, "CTO");
-	selection.parameter(SHUTTER, "Frame Thrust A", "Frame A");
-	selection.parameter(SHUTTER, "Frame Angle A", "Angle A");
-	selection.parameter(SHUTTER, "Frame Thrust C","Thrust C");
-	selection.parameter(SHUTTER, "Frame Angle C", "Angle C");
-	selection.parameter(SHUTTER, "Frame Thrust B", "Thrust B");
-	selection.parameter(SHUTTER, "Frame Angle B", "Angle B");
-	selection.parameter(SHUTTER, "Frame Thrust D", "Thrust D");
-	selection.parameter(SHUTTER, "Frame Angle D", "Angle D");
-	selection.parameter(SHUTTER, "Frame Assembly", "Assembly");
+	category.callback(updateDisplay);
+	// here you can add more parameters in the list 
+	category.parameter(INTENSITY, "Intens");
+	category.parameter(INTENSITY, "");
+	category.parameter(FOCUS, "Pan");
+	category.parameter(FOCUS, "Tilt");
+	category.parameter(FOCUS, "X Focus");
+	category.parameter(FOCUS, "Y Focus");
+	category.parameter(FOCUS, "Z Focus");
+	category.parameter(COLOR, "Red");
+	category.parameter(COLOR, "Blue");
+	category.parameter(COLOR, "Green");
+	category.parameter(COLOR, "White");
+	category.parameter(COLOR, "Cyan");
+	category.parameter(COLOR, "Magenta");
+	category.parameter(COLOR, "Yellow");
+	category.parameter(COLOR, "CTO");
+	category.parameter(COLOR, "Hue");
+	category.parameter(COLOR, "Saturation");
+	category.parameter(IMAGE, "Gobo Index/Speed", "Gobo I/S");
+	category.parameter(IMAGE, "Gobo Select", "Gobo Sel");
+	category.parameter(IMAGE, "Gobo Index/Speed 2", "Gobo2 I/S");
+	category.parameter(IMAGE, "Gobo Select 2", "Gobo2 Sel");
+	category.parameter(FORM, "Edge");
+	category.parameter(FORM, "Zoom");
+	category.parameter(FORM, "Iris");
+	category.parameter(FORM, "Diffusion");
+	category.parameter(FORM, "Shutter Strobe", "Strobe");
+	category.parameter(SHUTTER, "Frame Thrust A", "Frame A");
+	category.parameter(SHUTTER, "Frame Angle A", "Angle A");
+	category.parameter(SHUTTER, "Frame Thrust C","Thrust C");
+	category.parameter(SHUTTER, "Frame Angle C", "Angle C");
+	category.parameter(SHUTTER, "Frame Thrust B", "Thrust B");
+	category.parameter(SHUTTER, "Frame Angle B", "Angle B");
+	category.parameter(SHUTTER, "Frame Thrust D", "Thrust D");
+	category.parameter(SHUTTER, "Frame Angle D", "Angle D");
+	category.parameter(SHUTTER, "Frame Assembly", "Assembly");
 	eos.begin(); // for USB connection
-}
+	}
 
 void loop() {
 	// put update functions for buttons and encoders here
 	eos.update();
 	shift.update(keyB.button(4));
+	acc.update(keyA.button(4));
 	btn2nd.update(keyA.button(4));
 	btn1_2nd.update(keyA.button(1));
 	btn2_2nd.update(keyB.button(1));
+	btn3_2nd.update(keyA.button(2));
+	btn4_2nd.update(keyA.button(3));
+	btn5_2nd.update(keyB.button(2));
+	btn6_2nd.update(keyB.button(3));
 	enc1.update(encS1.position());
 	enc1Button.update(encS1.button());
 	enc2.update(encS2.position());
 	enc2Button.update(encS2.button());
-	selection.update(keyA.button(1), keyA.button(2), keyA.button(3), keyB.button(1), keyB.button(2), keyB.button(3));
+	category.update(keyA.button(1), keyA.button(2), keyA.button(3), keyB.button(1), keyB.button(2), keyB.button(3));
 	}
 
 void maintain() {
@@ -90,31 +111,29 @@ void maintain() {
 	if you don't need it, leave it empty!
 	put all your parsers and display handling here
 	*/
-
-	uint8_t enc = selection.parse();
+	uint8_t enc = category.parse();
 	if (enc == 1) {
 		lcd.clp(4, 1, 10);
-		if(selection.active(1)) {
+		if(category.active(1)) {
 			lcd.locate(4, 1);
-			lcd.print(selection.value(1), 3);
+			lcd.print(category.value(1), 3);
 			}
 		return;
 		}
 
 	if (enc == 2) {
 		lcd.clp(4, 11, 10);
-		if(selection.active(2)) {
+		if(category.active(2)) {
 			lcd.locate(4, 11);
-			lcd.print(selection.value(2), 3);
+			lcd.print(category.value(2), 3);
 			}
 		return;
 		}
 
-	if (channel.parse()) {
+	if(channel.parse()) {
 		lcd.locate(1, 1);
 		lcd.clr(1);
-		lcd.print("Chan ");
-		lcd.print(channel.selection().c_str());
+		lcd.printf("Chan %.15s", channel.selection().c_str());
 		return;
 		}
 	}
@@ -127,7 +146,14 @@ void connected() {
 	put all the init functions for fader and direct selects here,
 	also filters and subscribtions
 	*/
-
+	lcd.clr(2);
+	lcd.locate(2, 1);
+	lcd.printf("connected!");
+	delay(1000);
+	lcd.cls();
+	lcd.locate(1, 1);
+	lcd.clr(1);
+	lcd.printf("Chan ");
 	updateDisplay();
 	}
 
@@ -138,40 +164,34 @@ void disconnected() {
 	if you don't need it, leave it empty!
 	put all things here when the connection failed like splash screen
 	*/
-
 	}
 
 void updateDisplay() {
-	enc1.parameter(selection.parameter(1));
-	enc2.parameter(selection.parameter(2));
-	enc1Button.parameter(selection.parameter(1));
-	enc2Button.parameter(selection.parameter(2));
+	enc1.parameter(category.parameter(1));
+	enc2.parameter(category.parameter(2));
+	enc1Button.parameter(category.parameter(1));
+	enc2Button.parameter(category.parameter(2));
 	lcd.clr(2);
 	lcd.locate(2, 1);
-	lcd.print(selection.categoryName().c_str());
-	lcd.locate(2, 11);
-	lcd.print("Page ");
-	lcd.print(selection.page());
-	lcd.print("/");
-	lcd.print(selection.pages());
+	lcd.printf("%s %d/%d", category.categoryName().c_str(), category.page(), category.pages());
 	lcd.clr(3);
 	lcd.locate(3, 1);
-	if (selection.alias(1) != "")
-		lcd.print(selection.alias(1).c_str());
+	if (category.alias(1) != "")
+		lcd.printf("%.10s",category.alias(1).c_str());
 	else
-		lcd.print(selection.parameter(1).c_str());
+		lcd.printf("%.10s", category.parameter(1).c_str());
 	lcd.locate(3, 11);
-	if (selection.alias(2) != "")
-		lcd.print(selection.alias(2).c_str());
+	if (category.alias(2) != "")
+		lcd.printf("%.10s", category.alias(2).c_str());
 	else
-		lcd.print(selection.parameter(2).c_str());
+		lcd.printf("%.10s", category.parameter(2).c_str());
 	lcd.clr(4);
-	if(selection.active(1)) {
+	if(category.active(1)) {
 		lcd.locate(4, 1);
-		lcd.print(selection.value(1), 3);
+		lcd.printf("%.3f", category.value(1), 3);
 		}
-	if(selection.active(2)) {
+	if(category.active(2)) {
 		lcd.locate(4, 11);
-		lcd.print(selection.value(2), 3);
+		lcd.printf("%.3f", category.value(2), 3);
 		}
 	}

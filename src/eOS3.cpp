@@ -1,5 +1,4 @@
 #include "eOS3.h"
-#include <cstdint>
 
 OSC osc;
 
@@ -16,9 +15,10 @@ cbptr callbackConnect = connected;
 cbptr callbackDisconnect = disconnected;
 cbptr callbackReceived = maintain;
 
-// connection handling
+// connection time out handling
 uint32_t lastMessageRxTime = 0;
-bool timeoutPingSend = false;
+bool timeoutPingSend = false;;
+bool connectedToEos = false;
 #define PING_AFTER_IDLE_MS    2500
 #define TIMEOUT_AFTER_IDLE_MS 5000
 
@@ -41,20 +41,56 @@ eOS3::eOS3() {}
 
 void eOS3::begin() {
 	osc.begin();
+	connectedToEos = true;
 	}
 
 void eOS3::begin(UDP &udp, IPAddress ip, uint16_t udpRxPort, uint16_t udpTxPort) {
 	osc.begin(udp, ip, udpRxPort, udpTxPort);
+	connectedToEos = true;
 	callbackConnect();
 	}
 
 void eOS3::begin(Client &tcp, IPAddress ip, uint16_t tcpPort) {
 	osc.begin(tcp, ip, tcpPort);
+	connectedToEos = true;
 	callbackConnect();
 	}
 
+void eOS3::reboot() {
+	#if defined(PICO_RP2040) || defined(PICO_RP2350) || defined(PICO_RP2350A) || defined(PICO_RP2350B)
+		rp2040.reboot();
+	#endif
+
+	#if defined (TEENSY_ARDUINO40) || defined(TEENSY_ARDUINO41) || defined(TEENSY_ARDUINO35) || defined(TEENSY_ARDUINO36)
+		USB1_USBCMD = 0; // disconnect USB
+		delay(50);       // enough time for USB hubs/ports to detect disconnect
+		SCB_AIRCR = 0x05FA0004;
+	#endif
+}
+
 void eOS3::update() {
-	if(osc.receive()) callbackReceived();
+	if (osc.receive()) { 
+		callbackReceived();
+		connectedToEos = true;
+		timeoutPingSend = false;
+		lastMessageRxTime = millis();
+		}
+	if (lastMessageRxTime > 0) {
+		uint32_t diff = millis() - lastMessageRxTime;
+		// We first check if it's been too long and we need to time out
+		if (diff > TIMEOUT_AFTER_IDLE_MS) {
+			connectedToEos = false;
+			lastMessageRxTime = 0;
+			timeoutPingSend = false;
+			callbackDisconnect();
+			}
+		// It could be the console is sitting idle. Send a ping once to
+		// double check that it's still there, but only once after 2.5s have passed
+		if (!timeoutPingSend && diff > PING_AFTER_IDLE_MS) {
+			ping();
+			timeoutPingSend = true;
+			}
+		}
 	}
 
 void eOS3::filter(string filter) {
@@ -151,7 +187,7 @@ void Shift::update() {
 				}
 			}
 		}
-	if (modus == TOGGLE) {
+	else if (modus == TOGGLE) {
 		if (digitalRead(pin) != last) {
 			if (last == false) last = true;
 			else {
@@ -175,7 +211,7 @@ void Shift::update(bool state) {
 				}
 			}
 		}
-	if (modus == TOGGLE) {
+	else if (modus == TOGGLE) {
 		if (state != last) {
 			if (last == false) {
 				last = true;
@@ -224,7 +260,7 @@ void Acceleration::update() {
 				}
 			}
 		}
-	if (modus == TOGGLE) {
+	else if (modus == TOGGLE) {
 		if (digitalRead(pin) != last) {
 			if (last == false) last = true;
 			else {
@@ -248,7 +284,7 @@ void Acceleration::update(bool state) {
 				}
 			}
 		}
-	if (modus == TOGGLE) {
+	else if (modus == TOGGLE) {
 		if (state != last) {
 			if (last == false) {
 				last = true;
@@ -293,7 +329,7 @@ void Control2nd::update() {
 				}
 			}
 		}
-	if (modus == TOGGLE) {
+	else if (modus == TOGGLE) {
 		if (digitalRead(pin) != last) {
 			if (last == false) last = true;
 			else {
@@ -317,7 +353,7 @@ void Control2nd::update(bool state) {
 				}
 			}
 		}
-	if (modus == TOGGLE) {
+	else if (modus == TOGGLE) {
 		if (state != last) {
 			if (last == false) {
 				last = true;
@@ -362,7 +398,7 @@ void Control3rd::update() {
 				}
 			}
 		}
-	if (modus == TOGGLE) {
+	else if (modus == TOGGLE) {
 		if (digitalRead(pin) != last) {
 			if (last == false) last = true;
 			else {
@@ -386,7 +422,7 @@ void Control3rd::update(bool state) {
 				}
 			}
 		}
-	if (modus == TOGGLE) {
+	else if (modus == TOGGLE) {
 		if (state != last) {
 			if (last == false) {
 				last = true;
@@ -593,7 +629,7 @@ float Wheel::value() {
 	return val;
 	}
 
-bool Wheel::activ() {
+bool Wheel::active() {
 	return act;
 	}
 
@@ -1193,14 +1229,14 @@ void Submaster::callback(cbptr call) {
 void Submaster::updateAnalog() {
 	if ((updateTime + FADER_UPDATE_RATE_MS) < millis()) {
 		int raw = analogRead(analogPin);
-  	if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
-  	  analogLast = raw;
+		if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
+			analogLast = raw;
 			val = map(analogLast, FADER_THRESHOLD, 1023 - FADER_THRESHOLD, 0, 100);
 			if (valLast != val) {
-  	    valLast = val;
+				valLast = val;
 				osc.message(patternSub, (val / 100.0f));
 				if (call != nullptr) call();
-  	  	}
+				}
 			}
 		updateTime = millis();
 		}
@@ -1209,14 +1245,14 @@ void Submaster::updateAnalog() {
 void Submaster::updateAnalog(int analog) {
 	if ((updateTime + FADER_UPDATE_RATE_MS) < millis()) {
 		int raw = analog;
-  	if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
-  	  analogLast = raw;
+		if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
+			analogLast = raw;
 			val = map(analogLast, FADER_THRESHOLD, 1023 - FADER_THRESHOLD, 0, 100);
 			if (valLast != val) {
-  	    valLast = val;
+				valLast = val;
 				osc.message(patternSub, (val / 100.0f));
 				if (call != nullptr) call();
-  	  	}
+				}
 			}
 		updateTime = millis();
 		}
@@ -1336,11 +1372,11 @@ void Fader::lock(bool state) {
 void Fader::updateAnalog() {
 	if ((updateTime + FADER_UPDATE_RATE_MS) < millis()) {
 		int raw = analogRead(analogPin);
-  	if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
-  	  analogLast = raw;
+		if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
+			analogLast = raw;
 			val = map(analogLast, FADER_THRESHOLD, 1023 - FADER_THRESHOLD, 0, 100);
 			if (valLast != val) {
-  	    valLast = val;
+				valLast = val;
 				if (lockState == true) {
 					if ((valLast <= fetchValue + delta) && (valLast >= fetchValue - delta)) lockState = false; 
 					}
@@ -1348,7 +1384,7 @@ void Fader::updateAnalog() {
 					osc.message(patternFader, (val / 100.0f));
 					if (call != nullptr) call();
 					}
-  	  	}
+				}
 			}
 		updateTime = millis();
 		}
@@ -1357,11 +1393,11 @@ void Fader::updateAnalog() {
 void Fader::updateAnalog(int value) {
 	if ((updateTime + FADER_UPDATE_RATE_MS) < millis()) {
 		int raw = value;
-  	if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
-  	  analogLast = raw;
+		if (raw < (analogLast - FADER_THRESHOLD) || raw > (analogLast + FADER_THRESHOLD)) {
+			analogLast = raw;
 			val = map(analogLast, FADER_THRESHOLD, 1023 - FADER_THRESHOLD, 0, 100);
 			if (valLast != val) {
-  	    valLast = val;
+				valLast = val;
 				if (lockState == true) {
 					if ((valLast <= fetchValue + delta) && (valLast >= fetchValue - delta)) lockState = false; 
 					}
@@ -1369,7 +1405,7 @@ void Fader::updateAnalog(int value) {
 					osc.message(patternFader, (val / 100.0f));
 					if (call != nullptr) call();
 					}
-  	  	}
+				}
 			}
 		updateTime = millis();
 		}
@@ -3378,7 +3414,6 @@ void OSC::send() {
 	switch (interfaceType) {
 		case OSCUSB: {
 			slipEncode();
-			// Serial.write(bufferSend.data(), bufferSend.size()); // TODO test
 			for (size_t i = 0; i < bufferSend.size(); i++) {
 				Serial.write(bufferSend[i]);
 				}
@@ -3393,8 +3428,9 @@ void OSC::send() {
 		case OSCTCP: {
 			slipEncode();
 			if (!tcp->connected()) {
+				callbackDisconnect();
 				tcp->stop();
-				while(!tcp->connect(ip, portTcp)) {};
+				while(!tcp->connect(ip, portTcp));
 				}
 			tcp->write(bufferSend.data(), bufferSend.size());
 			break;
@@ -3534,13 +3570,13 @@ bool OSC::receiveUSB() {
 			uint8_t c = Serial.read();
 			switch (c) {
 				case END: {
-						if (bufferReceive.compare("ETCOSC?") == 0) {
-							sendHandshake();
-							callbackConnect(); 
-							return false;
-							}
-						else
-							return true;
+					if (bufferReceive.compare("ETCOSC?") == 0) {
+						sendHandshake();
+						callbackConnect(); 
+						return false;
+						}
+					else
+						return true;
 					}
 				case ESC: {
 					escFlag = true;

@@ -38,10 +38,6 @@ SOFTWARE.
  *   use ANALOG GND instead of the normal GND
  */
 
-// TODO software debounce
-// TODO fader fetch/lock up/down marker
-// TODO disconnect()
-
 #ifndef EOS3_H
 #define EOS3_H
 
@@ -54,28 +50,22 @@ SOFTWARE.
 #include "Udp.h"
 #include "Client.h"
 
-#include <cstddef>
-#include <cstdint>
 #include <string>
 #include <vector>
+
 using namespace std;
 
 /*******************************************************************************
  * Defines
 *******************************************************************************/
 
-// defines for SLIP
-
-
 // fader definitions
 #define FADER_UPDATE_RATE_MS 40 // update each 40ms
 #define FADER_THRESHOLD      4 // Jitter threshold of the faders
 
-// callbacks
+// callback functions
 typedef void (*cbptr)();
 typedef void (*cbptr2)(uint8_t);
-typedef void (*cbptr3)(int);
-
 
 /*******************************************************************************
  * General callback handlers functions
@@ -124,7 +114,7 @@ typedef enum EncoderDirection {
 	} direction_t;
 
 /**
- * @brief Button types
+ * @brief Button / DS types
  * 
  */
 typedef enum ButtonTypes {
@@ -219,11 +209,11 @@ typedef enum FaderType {
 class eOS3 {
 	public:
 		/**
-		 * @brief Construct a new EOS object
+		 * @brief Construct a new eOS3 object
 		 * 
 		 */
 		eOS3();
-	
+
 		/**
  		* @brief Initialise the USB interface
  		* 
@@ -235,8 +225,8 @@ class eOS3 {
 		* 
 		* @param ip EOS console IP address
 		* @param udp UDP interface
-		* @param udpRxPort EOS UDP RX receive port
-		* @param udpTxPort EOS UDP TX transmit port
+		* @param udpRxPort EOS UDP RX receive port, default port 8000
+		* @param udpTxPort EOS UDP TX transmit port, default port 8001
 		*/
 		void begin(UDP &udp, IPAddress ip, uint16_t udpRxPort = 8000, uint16_t udpTxPort = 8001);
 
@@ -250,7 +240,13 @@ class eOS3 {
 		void begin(Client &tcp, IPAddress ip, uint16_t tcpPort = 3037);
 
 		/**
-		 * @brief Update the handlers for maintain(), connected() and disconnected(), must done in the while() loop
+		 * @brief Reboot the microcontroller, only available for RaspBerry Pico(2) and Teensy (3.5, 3.6, 4.0, 4.1)
+		 * 
+		 */
+		void reboot();
+
+		/**
+		 * @brief Update the callback handlers for maintain(), connected() and disconnected(), must done in the loop()
 		 * 
 		 */
 		void update();
@@ -259,14 +255,14 @@ class eOS3 {
 		 * @brief Filter for messages you want receive
 		 * 
 		 * 
-		 * @param message you want receive
+		 * @param message OSC pattern you want to receive
 		 */
 		void filter(string pattern);
 
 		/**
 		 * @brief Remove a single filter from the filter list
 		 * 
-		 * @param pattern OSC pattern you want receive
+		 * @param pattern OSC pattern you want to receive
 		 */
 		void filterRemove(string pattern);
 
@@ -313,7 +309,7 @@ class eOS3 {
 		/**
 		 * @brief send a ping with a number
 		 * 
-		 * @param message 
+		 * @param number 
 		 */
 		void ping(int32_t number);
 
@@ -327,7 +323,7 @@ class eOS3 {
 		/**
 		 * @brief send a new command line string
 		 * 
-		 * @param cmd command line String
+		 * @param newCmd command line String
 		 */
 		void newCommand(string newCmd);
 
@@ -341,16 +337,16 @@ class eOS3 {
 		/**
 		 * @brief Initialise a fader bank, this must done after an established connection
 		 * 
-		 * @param page fader page of the console, default is 1
-		 * @param faders number of faders, standard is 10
-		 * @param bank number of the OSC fader bank, default is 1
+		 * @param faders number of faders, default is 10
+		 * @param inex number of the OSC fader bank, default is 1
+		 * @param page fader, default is 1
 		 */
 		void initFaders(uint8_t faders = 10, uint8_t index = 1, uint8_t page = 1);
 
 		/**
 		 * @brief Initialise a direct select bank, this must done after an established connection
 		 * 
-		 * @param type button type 
+		 * @param type button type, CHAN, GROUP, IP, FP, CP, BP, PRESET, MACRO, FX, SNAPSHOT, MS, SCENE
 		 * @param count number of DS buttons
 		 * @param index index number, default = 1
 		 * @param page page number, default = 1
@@ -358,9 +354,8 @@ class eOS3 {
 		 */
 		void initDS(button_t type, uint8_t buttons, uint8_t index = 1, uint16_t page = 1, bool flexi = false);
 
-	private:
-
 	};
+
 
 /*******************************************************************************
  * Shift button class
@@ -375,7 +370,7 @@ class Shift {
 		/**
 		 * @brief Construct a new Shift button object
 		 * 
-		 * @param pin button pin, not needed for virtual devices
+		 * @param pin shift button pin, not needed for virtual devices
 		 */
 		Shift(uint8_t pin);
 		Shift();
@@ -392,7 +387,7 @@ class Shift {
 		 * 
 		 * @param modus PUSH or TOGGLE, default PUSH
 		 */
-		void mode(buttonMode_t modus);
+		void mode(buttonMode_t modus = PUSH);
 
 		/**
 		 * @brief Get the state of the shift button
@@ -416,6 +411,7 @@ class Shift {
 		buttonMode_t modus = PUSH;
 	};
 
+
 /*******************************************************************************
  * Accelaration button class
 *******************************************************************************/
@@ -429,7 +425,7 @@ class Acceleration {
 		/**
 		 * @brief Construct a new Accelaration button object
 		 * 
-		 * @param pin button pin, not needed for virtual devices
+		 * @param pin acceleration button pin, not needed for virtual devices
 		 * @param mode PUSH or TOGGLE mode
 	 */
 		Acceleration(uint8_t pin);
@@ -447,7 +443,7 @@ class Acceleration {
 		 * 
 		 * @param modus PUSH or TOGGLE, default PUSH
 		 */
-		void mode(buttonMode_t modus);
+		void mode(buttonMode_t modus = PUSH);
 
 		/**
 		 * @brief Get the state of the accelaration button
@@ -471,6 +467,7 @@ class Acceleration {
 		buttonMode_t modus = PUSH;
 	};
 
+
 /*******************************************************************************
  * 2nd button control class
  ******************************************************************************/
@@ -484,8 +481,7 @@ class Control2nd {
 		/**
 		 * @brief Construct a new 2nd button control object
 		 * 
-		 * @param pin button pin, not needed for virtual devices
-		 * @param mode PUSH or TOGGLE mode
+		 * @param pin control2nd button pin, not needed for virtual devices
 	 */
 		Control2nd(uint8_t pin);
 		Control2nd();
@@ -495,7 +491,7 @@ class Control2nd {
 		 * 
 		 * @param modus PUSH or TOGGLE, default PUSH
 		 */
-		void mode(buttonMode_t modus);
+		void mode(buttonMode_t modus = PUSH);
 
 		/**
 		 * @brief Get the state of the accelaration button
@@ -519,6 +515,7 @@ class Control2nd {
 		buttonMode_t modus = PUSH;
 	};
 
+
 /*******************************************************************************
  * 3rd button control class
 *******************************************************************************/
@@ -532,8 +529,7 @@ class Control3rd {
 		/**
 		 * @brief Construct a new 3rd button control object
 		 * 
-		 * @param pin button pin, not needed for virtual devices
-		 * @param mode PUSH or TOGGLE mode
+		 * @param pin control3rd button pin, not needed for virtual devices
 	 */
 		Control3rd(uint8_t pin);
 		Control3rd();
@@ -543,7 +539,7 @@ class Control3rd {
 		 * 
 		 * @param modus PUSH or TOGGLE, default PUSH
 		 */
-		void mode(buttonMode_t modus);
+		void mode(buttonMode_t modus = PUSH);
 
 		/**
 		 * @brief Get the state of the 3rd button control
@@ -567,6 +563,7 @@ class Control3rd {
 		buttonMode_t modus = PUSH;
 	};
 
+
 /*******************************************************************************
  * Button class
 *******************************************************************************/
@@ -581,9 +578,9 @@ class Button {
 		 * @brief Construct a new OSC button object
 		 * 
 		 * @param pin button pin, not needed for virtual devices
-		 * @param type KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, SUB, FX, PIXMAP, CURVE, SNAPSHOT, SCENE
+		 * @param type RAW, KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, FX, PIXMAP, CURVE, SNAPSHOT, SCENE, SC
 		 * @param strng optional for KEY name and RAW message
-		 * @param number optional number for MACRO
+		 * @param number optional number for MACRO and others
 		 */
 		Button(uint8_t pin, button_t type, string strng);
 		Button(uint8_t pin, button_t type, uint16_t number);
@@ -591,7 +588,7 @@ class Button {
 		/**
 		 * @brief Construct a new Osc Button object for vitual methods like I/O expanders and touchscreens
 		 * 
-		 * @param type RAW, KEY or MACRO
+		 * @param type RAW, KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, FX, PIXMAP, CURVE, SNAPSHOT, SCENE, SC
 		 * @param strng strng optional for KEY name and RAW message
 		 * @param number optional number for MACRO
 		 */
@@ -612,6 +609,7 @@ class Button {
 		string pattern;
 	};
 
+
 /*******************************************************************************
  * 2nd Button class
 *******************************************************************************/
@@ -626,7 +624,7 @@ class Button2nd {
 		 * @brief Construct a new OSC button2nd object
 		 * 
 		 * @param pin button pin, not needed for virtual devices
-		 * @param type RAW, KEY or MACRO
+		 * @param type RAW, KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, FX, PIXMAP, CURVE, SNAPSHOT, SCENE, SC
 		 * @param strng optional for KEY name and RAW message
 		 * @param number optional number for MACRO
 		 */
@@ -636,7 +634,7 @@ class Button2nd {
 		/**
 		 * @brief Construct a new Osc Button object for vitual methods like I/O expanders and touchscreens
 		 * 
-		 * @param type RAW, KEY or MACRO
+		 * @param type RAW, KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, FX, PIXMAP, CURVE, SNAPSHOT, SCENE, SC
 		 * @param strng strng optional for KEY name and RAW message
 		 * @param number optional number for MACRO
 		 */
@@ -658,6 +656,7 @@ class Button2nd {
 		string pattern;
 	};
 
+
 /*******************************************************************************
  * 3rd Button class
 *******************************************************************************/
@@ -672,7 +671,7 @@ class Button3rd {
 		 * @brief Construct a new OSC button2nd object
 		 * 
 		 * @param pin button pin, not needed for virtual devices
-		 * @param type RAW, KEY or MACRO
+		 * @param type RAW, KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, FX, PIXMAP, CURVE, SNAPSHOT, SCENE, SC
 		 * @param strng optional for KEY name and RAW message
 		 * @param number optional number for MACRO
 		 */
@@ -682,7 +681,7 @@ class Button3rd {
 		/**
 		 * @brief Construct a new Osc Button object for vitual methods like I/O expanders and touchscreens
 		 * 
-		 * @param type RAW, KEY or MACRO
+		 * @param type RAW, KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, FX, PIXMAP, CURVE, SNAPSHOT, SCENE, SC
 		 * @param strng strng optional for KEY name and RAW message
 		 * @param number optional number for MACRO
 		 */
@@ -704,6 +703,7 @@ class Button3rd {
 		string pattern;
 	};
 
+
 /*******************************************************************************
  * Wheel class
 *******************************************************************************/
@@ -719,7 +719,7 @@ class Wheel {
 		 * 
 		 * @param pinA pin A of the encoder, not needed for virtual devices
 		 * @param pinB pin B of the encoder, not needed for virtual devices
-		 * @param dir the direction for the wheel can be FORWARD or REVERSE
+		 * @param dir the direction for the wheel, can be FORWARD or REVERSE, default FORWARD
 		 */
 		Wheel(uint8_t pinA, uint8_t pinB, direction_t direction = FORWARD);
 		Wheel(direction_t direction = FORWARD);
@@ -756,24 +756,23 @@ class Wheel {
 		/**
 		 * @brief Get the parameter value
 		 * 
-		 * @return float 
+		 * @return float value
 		 */
 		float value();
 
 		/**
-		 * @brief Test if the value is activ
+		 * @brief Check if the is an activ parameter value
 		 * 
 		 * @return true if parameter is active
 		 * @return false if parameter is inactiv
 		 */
-		bool activ();
+		bool active();
 
 		/**
 		 * @brief Update the output of the Encoder, must be in the loop()
 		 * 
 		 * @param stateA optional for virtual devices, TRUE for A click
 		 * @param stateB optional for virtual devices, TRUE for B click
-		 * @param stateButton optional for virtual devices, TRUE for button press
 		 * @param motion optional for virtual devices, can < 0 for left encoder turnand  > 0 right encoder turn
 		 */
 		void update();
@@ -795,6 +794,7 @@ class Wheel {
 		cbptr call = nullptr;
 	};
 
+
 /*******************************************************************************
  * Encoder class
 *******************************************************************************/
@@ -810,7 +810,7 @@ class Encoder {
 		 * 
 		 * @param pinA pin A of the encoder, not needed for virtual devices
 		 * @param pinB pin B of the encoder, not needed for virtual devices
-		 * @param direction the direction for the wheel can be FORWARD or REVERSE
+		 * @param direction the direction for the wheel can be FORWARD or REVERSE, default FORWARD
 		 */
 		Encoder(uint8_t pinA, uint8_t pinB, direction_t direction = FORWARD);
 		Encoder(direction_t direction = FORWARD);
@@ -823,21 +823,22 @@ class Encoder {
 		void callback(cbptr call);
 
 		/**
-		 * @brief set the parameter which should controlled by the encoder
+		 * @brief Set the parameter which should controlled by the encoder
 		 * 
 		 * @param param parameter name as a string
+		 * @param alias optional parameter alias name as a string, used for display a shorted parameter name
 		 */
 		void parameter(string param, string alias = "");
 
 		/**
-		 * @brief get the parameter which is controlled by the encoder
+		 * @brief Get the parameter which is controlled by the encoder
 		 * 
 		 * @return String parameter
 		 */
 		string parameter();
 
 		/**
-		 * @brief get the parameter alias name which is controlled by the encoder
+		 * @brief Get the parameter alias name which is controlled by the encoder
 		 * 
 		 * @return String alias parameter name
 		 */
@@ -859,7 +860,7 @@ class Encoder {
 		float value();
 
 		/**
-		 * @brief Test if the value is activ
+		 * @brief Check if the is an activ parameter value
 		 * 
 		 * @return true if parameter is active
 		 * @return false if parameter is inactiv
@@ -871,7 +872,6 @@ class Encoder {
 		 * 
 		 * @param stateA optional for virtual devices, TRUE for A click
 		 * @param stateB optional for virtual devices, TRUE for B click
-		 * @param stateButton optional for virtual devices, TRUE for button press
 		 * @param motion optional for virtual devices, can < 0 for left encoder turnand  > 0 right encoder turn
 		 */
 		void update();
@@ -895,6 +895,7 @@ class Encoder {
 		cbptr call = nullptr;
 	};
 
+
 /*******************************************************************************
  * Absolute levels class
 *******************************************************************************/
@@ -909,8 +910,8 @@ class AbsoluteLevels {
 		 * @brief Construct a new AbsolutLevels object
 		 * 
 		 * @param pin button pin, not needed for virtual devices
-		 * @param function parameter function PARAMETER, FULL, HOME, MIN, MAX, LEVEL, MINUS, PLUS
-		 * @param function2nd second parameter function PARAMETER, FULL, HOME, MIN, MAX, LEVEL, MINUS, PLUS
+		 * @param function parameter function PARAMETER, FULL, HOME, MIN, MAX, LEVEL, MINUS, PLUS, default HOME
+		 * @param function2nd second parameter function PARAMETER, FULL, HOME, MIN, MAX, LEVEL, MINUS, PLUS, default PARAMETER
 		 */
 		AbsoluteLevels(uint8_t pin, levels_t function = HOME, levels_t function2nd = PARAMETER);
 		AbsoluteLevels(levels_t function = HOME, levels_t function2nd = PARAMETER);
@@ -940,6 +941,7 @@ class AbsoluteLevels {
 		string patternFunction;
 		string patternFunction2nd;
 	};
+
 
 /*******************************************************************************
  * Direct select class
@@ -994,6 +996,11 @@ class DSTool {
 		DSTool(uint8_t pinUp, uint8_t pinDown);
 		DSTool();
 
+		/**
+		 * @brief Set the pin of an optional Flexi button
+		 * 
+		 * @param pinFlexi 
+		 */
 		void flexiButton(uint8_t pinFlexi);
 		void flexiButton();
 
@@ -1001,20 +1008,20 @@ class DSTool {
 		 * @brief Initialise a direct select bank, this must done after an established connection
 		 * 
 		 * @param type DS type CHAN, GROUP, IP, CP, FP, BP, PRESET, MACRO, FX, SNAPSHOT, MS, SCENE
-		 * @param count number of buttons
-		 * @param index (bank)
+		 * @param buttons number of buttons
+		 * @param index bank, default 1
 		 */
 		void init(button_t type, uint8_t buttons, uint8_t index = 1);
 
 		/**
-		 * @brief Parse for DS feedback, must done after receiveOSC()
+		 * @brief Parse for DS feedback, this must done in maintain()
 		 * 
 		 * @return number of the parsed DS button, 0 if no data, -1 if page data
 		 */
 		int8_t parse();
 
 		/**
-		 * @brief Callbacks for DS page (including flexi state) and data
+		 * @brief OPtional Callbacks for DS page (including flexi state) and data
 		 * 
 		 * @param call function(uint8_t)
 		 */
@@ -1045,13 +1052,13 @@ class DSTool {
 		/**
 		 * @brief Get the current flexi state
 		 * 
-		 * @return true 
-		 * @return false 
+		 * @return true if flexi state
+		 * @return false no flexi
 		 */
 		bool flexi();
 
 		/**
-		 * @brief Return the label of the DS button
+		 * @brief Return the label of a DS button
 		 * 
 		 * @param number of the DS button
 		 * @return string button name
@@ -1059,7 +1066,7 @@ class DSTool {
 		string label(uint8_t number);
 
 		/**
-		 * @brief Return the number of the DS
+		 * @brief Return the number of the DS button
 		 * 
 		 * @param number of the DS button
 		 * @return string of the DS number
@@ -1067,7 +1074,7 @@ class DSTool {
 		uint16_t number(uint8_t number);
 
 		/**
-		 * @brief Check for updated page, must be in the loop()
+		 * @brief Check for updated page, must done in loop()
 		 * 
 		 * @param upState up button state, optional for virtual input, TRUE if button press
 		 * @param downState down button state, optional for virtual input, TRUE if button press
@@ -1076,7 +1083,7 @@ class DSTool {
 		void updateButtons(bool stateUp, bool stateDown);
 
 		/**
-		 * @brief Update flexi button
+		 * @brief Update flexi button, must done in loop()
 		 * 
 		 * @param flexiState flexi button state, optional for virtual input, TRUE if button press
 		 */
@@ -1117,7 +1124,7 @@ class DSTool {
 *******************************************************************************/
 
 /**
- * @brief Universal button object
+ * @brief DS button object, this allows to change the DS type by a dedicated button
  * 
  */
 class ButtonDSType {
@@ -1125,6 +1132,7 @@ class ButtonDSType {
 		/**
 		 * @brief Construct a new OSC button object
 		 * 
+		 * @param dsTool DSTool class name
 		 * @param pin button pin, not needed for virtual devices
 		 * @param type KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, SUB, FX, PIXMAP, CURVE, SNAPSHOT, SCENE
 		 */
@@ -1132,7 +1140,7 @@ class ButtonDSType {
 		ButtonDSType(DSTool &dsTool, button_t type);
 
 		/**
-		 * @brief Update the state of the button, must done in the while() loop
+		 * @brief Update the state of the button, must done in loop()
 		 * 
 		 * @param state optional for virtual devices, TRUE if button press
 		 */
@@ -1145,6 +1153,7 @@ class ButtonDSType {
 		button_t type;
 		DSTool *dsTool;
 	};
+
 
 /*******************************************************************************
  * Submaster class
@@ -1188,29 +1197,29 @@ class Submaster {
 		uint8_t value();
 
 		/**
-		 * @brief Update the analog input, must in loop()
+		 * @brief Update the analog input, must done in loop()
 		 * 
 		 */
 		void updateAnalog();
 
 		/**
-		 * @brief Update the virtual analog input, must in loop()
+		 * @brief Update the virtual analog input, must done in loop()
 		 * 
 		 * @param analog input 10 bits
 		 */
 		void updateAnalog(int analog);
 
 		/**
-		 * @brief Update the virtual value input, no jitter control, must in loop()
+		 * @brief Update the virtual value input, no jitter control, must done in loop()
 		 * 
 		 * @param value input 0...100
 		 */
 		void updateValue(uint8_t value);
 
 		/**
-		 * @brief Update the Fire button, must in loop()
+		 * @brief Update the Fire button, must done in loop()
 		 * 
-		 * @param fireState needed for virtual devices
+		 * @param fireState needed only for virtual devices
 		 */
 		void updateFire();
 		void updateFire(bool fireState);
@@ -1243,9 +1252,9 @@ class Fader {
 		/**
 		 * @brief Construct a new Fader object
 		 * 
-		 * @param analogPin fader leveler pin
+		 * @param analogPin fader leveler pin, not needed for virtual devices
 		 * @param fader number of the fader inside the bank
-		 * @param bank number of the OSC fader bank, default is 1
+		 * @param index number of the OSC fader bank, default is 1
 		 */
 		Fader(uint8_t analogPin, uint8_t fader, uint8_t index = 1);
 		Fader(uint8_t fader, uint8_t index = 1);
@@ -1253,7 +1262,7 @@ class Fader {
 		/**
 		 * @brief Setup a fire button
 		 * 
-		 * @param firePin 
+		 * @param firePin not needed for virtual devices
 		 */
 		void fireButton(uint8_t firePin);
 		void fireButton();
@@ -1261,7 +1270,7 @@ class Fader {
 		/**
 		 * @brief Setup a stop button
 		 * 
-		 * @param stopPin 
+		 * @param stopPin not needed for virtual devices
 		 */
 		void stopButton(uint8_t stopPin);
 		void stopButton();
@@ -1269,7 +1278,7 @@ class Fader {
 		/**
 		 * @brief Setup a load button
 		 * 
-		 * @param loadPin 
+		 * @param loadPin not needed for virtual devices
 		 */
 		void loadButton(uint8_t loadPin);
 		void loadButton();
@@ -1302,7 +1311,7 @@ class Fader {
 		 */
 		void jitter(uint8_t delta);
 
-		/** TODO int8_t up(1)/down(-1)
+		/**
 		 * @brief Return the lock state
 		 * 
 		 * @return true OSC locked
@@ -1324,7 +1333,7 @@ class Fader {
 		void updateAnalog();
 
 		/**
-		 * @brief Update the virtual fader, for external A/D expanders ,must in loop ()
+		 * @brief Update the virtual fader, for external A/D expanders ,must done in loop ()
 		 * @brief For use with virtual inputs
 		 * 
 		 * @param value virtual input 10 bits
@@ -1332,14 +1341,14 @@ class Fader {
 		void updateAnalog(int value);
 
 		/**
-		 * @brief Update the virtual value input, no jitter control, for touch devices
+		 * @brief Update the virtual value input, no jitter control, for touch devices,must done in loop ()
 		 * 
 		 * @param value input 0...100
 		 */
 		void updateValue(uint8_t value);
 
 		/**
-		 * @brief Update the Fire / Stop / Load buttons
+		 * @brief Update the Fire / Stop / Load buttons ,must done in loop ()
 		 * 
 		 * @param fireState only needed for virtual devices
 		 * @param stopState only needed for virtual devices
@@ -1440,7 +1449,7 @@ class FaderTool {
 		 * @brief Return the label of the fader
 		 * 
 		 * @param fader number
-		 * @return const char* fader name
+		 * @return stringfader name
 		 */
 		string label(uint8_t fader);
 
@@ -1477,8 +1486,10 @@ class FaderTool {
 		uint16_t rangeMax(uint8_t fader);
 
 		/**
-		 * @brief Check for updated page, must be in the loop()
+		 * @brief Check for updated page, must done in the loop()
 		 * 
+		 * @param stateUp only needed for virtual devices, TRUE if button press
+		 * @param stateDown only needed for virtual devices, TRUE if button press
 		 */
 		void update();
 		void update(bool stateUp, bool stateDown);
@@ -1511,6 +1522,7 @@ class FaderTool {
 		string patternSearchValue;
 		string patternSearchPage;
 	};
+
 
 /*******************************************************************************
  * Parameter list handling class
@@ -1550,12 +1562,12 @@ class SelectParameter {
 		 * @brief Set the name of a parameter by index
 		 * 
 		 * @param name parameter name
-		 * @param alias parameter alias name
+		 * @param alias parameter alias name, can used for displaying a shorted parameter name
 		 */
 		void parameter(string parameter, string alias = "");
 
 		/**
-		 * @brief Parse the incoming OSC message for value updates use subsription()
+		 * @brief Parse the incoming OSC message for parameter data
 		 * 
 		 * @return uint8_t returns the encoder number to update the value, 0 if there is no visible update
 		 */
@@ -1610,14 +1622,14 @@ class SelectParameter {
 		uint8_t pages();
 
 		/**
-		 * @brief Get the actual page number
+		 * @brief Get the current page number
 		 * 
 		 * @return uint8_t page number
 		 */
 		uint8_t page();
 
 		/**
-		 * @brief Check for updated selection, must be in the loop()
+		 * @brief Check for updated selection, must done in loop()
 		 * 
 		 * @param stateUp optional for virtual devices, TRUE if button press
 		 * @param stateDown optional for virtual devices, TRUE if button press
@@ -1647,6 +1659,7 @@ class SelectParameter {
 		cbptr callPage = nullptr;
 		cbptr2 callEncoder = nullptr;
 	};
+
 
 /*******************************************************************************
  * Parameter category list handling class
@@ -1689,13 +1702,14 @@ class SelectCategory {
 		/**
 		 * @brief Set the name of a parameter by index
 		 * 
+		 * @param category parameter category
 		 * @param name parameter name
-		 * @param alias parameter alias name
+		 * @param alias optional parameter alias name for displaying a shorted parameter name
 		 */
 		void parameter(category_t category, string parameter, string alias = "");
 
 		/**
-		 * @brief Parse the incoming OSC message for value updates use subsription()
+		 * @brief Parse the incoming OSC message for parameter data
 		 * 
 		 * @return uint8_t returns the encoder number to update the value, 0 if there is no visible update
 		 */
@@ -1741,17 +1755,17 @@ class SelectCategory {
 		uint8_t pages();
 
 		/**
-		 * @brief Get the actual page number
+		 * @brief Get the current page number
 		 * 
 		 * @return uint8_t page number
 		 */
 		uint8_t page();
 
 		/**
-		 * @brief Get curent page of a category
+		 * @brief Get current page of a category
 		 * 
 		 * @param category 
-		 * @return uint8_t cureent page
+		 * @return uint8_t current page
 		 */
 		uint8_t page(category_t category);
 
@@ -1781,7 +1795,7 @@ class SelectCategory {
 		/**
 		 * @brief Get the current category as a string
 		 * 
-		 * @return const char* category as a string
+		 * @return string category as a string
 		 */
 		string categoryName();
 
@@ -1799,7 +1813,7 @@ class SelectCategory {
 		void update(bool stateIntens, bool stateFocus, bool stateColor, bool stateImage, bool stateForm, bool stateShutter);
 		
 		/**
-		 * @brief force an update for a specific catagory, this should not done in loop()
+		 * @brief force an update for a specific catagory, this should not! done in loop()
 		 * 
 		 * @param category 
 		 */
@@ -1830,6 +1844,7 @@ class SelectCategory {
 		cbptr callPage = nullptr;
 		cbptr2 callEncoder = nullptr;
 	};
+
 
 /*******************************************************************************
  * Parameter category dynamic handling class
@@ -1873,7 +1888,7 @@ class SelectDynamic {
 		 * @brief Get the name of a parameter by encoder
 		 * 
 		 * @param encoder 
-		 * @return const char* 
+		 * @return string parameter name
 		 */
 		string parameter(uint8_t encoder);
 
@@ -1900,7 +1915,7 @@ class SelectDynamic {
 		 * @return true if the encoder have values
 		 * @return false if not
 		 */
-		bool active(uint8_t encoder); // if (idx[encoder] == -1) return false else true;
+		bool active(uint8_t encoder);
 
 		/**
 		 * @brief Get the wheel number by encoder
@@ -1918,9 +1933,9 @@ class SelectDynamic {
 		float value(uint8_t encoder);
 
 		/**
-		 * @brief Parse the incoming OSC message for value updates
+		 * @brief Parse the incoming OSC message for parameter data
 		 * 
-		 * @return uint8_t returns the encoder for update the value, 0 if there is no visible update
+		 * @return uint8_t returns the encoder for update the value, 0 if there is no update
 		 */
 		uint8_t parse();
 
@@ -1934,7 +1949,7 @@ class SelectDynamic {
 		/**
 		 * @brief Get the current category as a string
 		 * 
-		 * @return const char* category as a string
+		 * @return string category as a string
 		 */
 		string categoryName();
 
@@ -1990,7 +2005,7 @@ class SelectDynamic {
 		void update(bool stateIntens, bool stateFocus, bool stateColor, bool stateImage, bool stateForm, bool stateShutter);
 
 		/**
-		 * @brief force an update for a specific catagory, this should not done in loop()
+		 * @brief force an update for a specific catagory, this should not! done in loop()
 		 * 
 		 * @param category 
 		 */
@@ -2030,6 +2045,7 @@ class SelectDynamic {
 		cbptr2 callEncoder = nullptr;
 	};
 
+
 /*******************************************************************************
  * Special parsers
 *******************************************************************************/
@@ -2048,7 +2064,7 @@ class Softkey {
 		Softkey();
 
 		/**
-		 * @brief Parse for Softkeys, must done after receiveOSC()
+		 * @brief Parse for Softkeys, this must done in maintain()
 		 * 
 		 * @return uint8_t number of actual parsed softkey, return 0 if no data
 		 */
@@ -2087,7 +2103,7 @@ class PanTilt {
 		PanTilt();
 
 		/**
-		 * @brief Parse for Pan/Tilt vaues
+		 * @brief Parse for Pan/Tilt vaues, this must done in maintain()
 		 * 
 		 * @return true if there are pan/tilt data
 		 * @return false if no data
@@ -2102,7 +2118,7 @@ class PanTilt {
 		void callback(cbptr call);
 
 		/**
-		 * @brief Get
+		 * @brief Check if there are active values
 		 * 
 		 * @return true if parameters are active
 		 * @return false if parameters are inactive
@@ -2175,7 +2191,7 @@ class XYZ {
 		XYZ();
 
 		/**
-		 * @brief Parse for XYZ data
+		 * @brief Parse for XYZ data, this must done in maintain()
 		 * 
 		 * @return true if there are xyz data
 		 * @return false if no data
@@ -2190,7 +2206,7 @@ class XYZ {
 		void callback(cbptr call);
 
 		/**
-		 * @brief Get
+		 * @brief Check if there are active values
 		 * 
 		 * @return true if parameters are active
 		 * @return false if parameters are inactive
@@ -2239,7 +2255,7 @@ class HueSat {
 		HueSat();
 
 		/**
-		 * @brief Parse for Hue / Saturation values
+		 * @brief Parse for Hue / Saturation values, this must done in maintain()
 		 * 
 		 * @return true if there are hue / saturation data
 		 * @return false if no data
@@ -2254,7 +2270,7 @@ class HueSat {
 		void callback(cbptr call);
 
 		/**
-		 * @brief Get
+		 * @brief Check if there are active values
 		 * 
 		 * @return true if parameters are active
 		 * @return false if parameters are inactive
@@ -2329,7 +2345,7 @@ class Channel {
 		Channel();
 
 		/**
-		 * @brief Parse for Channel data
+		 * @brief Parse for Channel data, this must done in maintain()
 		 * 
 		 * @return true if there are channel data
 		 * @return false if no data
@@ -2401,7 +2417,7 @@ class Command {
 		Command();
 
 		/**
-		 * @brief Parse for the Command Line
+		 * @brief Parse for the Command Line, this must done in maintain()
 		 * 
 		 * @return true if there is a commmand line
 		 * @return false if no data
@@ -2440,7 +2456,7 @@ class Cue {
 		Cue();
 
 		/**
-		 * @brief Parse for Cue data, must done after receiveOSC()
+		 * @brief Parse for Cue data, this must done in maintain()
 		 * 
 		 * @return cue_t 
 		 */
@@ -2549,7 +2565,7 @@ class Version {
 		string library();
 
 		/**
-		 * @brief Parse for version
+		 * @brief Parse for version, this must done in maintain()
 		 * 
 		 * @return true if version data
 		 * @return false no data
@@ -2582,7 +2598,7 @@ class User {
 		User();
 
 		/**
-		 * @brief Parse for user number
+		 * @brief Parse for user number, this must done in maintain()
 		 * 
 		 * @return true if user cahnged
 		 * @return false if no data
@@ -2621,7 +2637,7 @@ class Show {
 		Show();
 
 		/**
-		 * @brief Parser for show name
+		 * @brief Parser for show name, this must done in maintain()
 		 * 
 		 * @return true if there is a show name
 		 * @return false if no data
@@ -2660,7 +2676,7 @@ class EventState {
 		EventState();
 
 		/**
-		 * @brief Parser for the event state
+		 * @brief Parser for the event state, this must done in maintain()
 		 * 
 		 * @return true if event state changed
 		 * @return false if no data
@@ -2685,6 +2701,7 @@ class EventState {
 		uint8_t eventState;
 		cbptr call = nullptr;
 	};
+
 
 /*******************************************************************************
  * Helpers for creating patterns
@@ -2738,18 +2755,20 @@ string patternFader(uint8_t faders = 10, uint8_t index = 1, uint8_t page = 1);
  */
 string patternAbsolute(levels_t function, string param);
 
+
 /*******************************************************************************
  * Helper for data conversion
 *******************************************************************************/
 
 /**
- * @brief convert a float value to a string
+ * @brief Convert a float value to a string
  * 
  * @param float32 value to convert
  * @param digits default 3, common for parameter values
  * @return string result as string
  */
 string ftos(float float32, uint8_t digits = 3);
+
 
 /*******************************************************************************
  * OSC handling class
@@ -2832,7 +2851,7 @@ class OSC {
 		void send();
 
 		/**
-		 * @brief Receive an OSC message, must in 'loop()'
+		 * @brief Check if an OSC message is received, this will procced by eOS3.update()
 		 * 
 		 * @return true if there is a new OSC message
 		 * @return false no OSC message arrived
@@ -2912,14 +2931,7 @@ class OSC {
 			int tagSize;
 			struct Data {
 				char tag;
-				struct MIDI {
-					uint8_t port;
-					uint8_t status;
-					uint8_t data1;
-					uint8_t data2;
-				} midi;
 			int32_t int32;
-			uint64_t timetag;
 			string strng;
 			float float32;
 			};
