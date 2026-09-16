@@ -15,7 +15,7 @@ Most improvements are
 eOS3 is an object orientated library for Arduino to control ETCs EOS Family Consoles (v3.1 and later) with OSC over USB or Ethernet UDP/TCP. The goal of the library is to have a smart toolbox to create your own boxes which covers your needing by endless combinations of hardware elements.
 The library support hardware elements like encoders, fader, buttons with some helper functions. The library allows you to use hardware elements as an object and with the use of the helper functions, code becomes much easier to write and read and to understand.<br>
 Please refer to the EOS manual for more information about OSC.<br>
-If you have wishes for other functions or classes use the discussion tab. If you find bugs make an issue, nobody is perfect.
+If you have wishes for other functions or classes use the discussion tab. If you find bugs make an issue, nobody is perfect. For questions use the discussion page.
 
 ## eOS3
 The new main class is `eOS3`.
@@ -34,38 +34,43 @@ You can import the .zip file from the IDE with *Sketch / Include Library / Add .
 3. For PlatformIO Unzip and move the folder to the lib folder of your project.
 
 ## Examples
-There are differnet examples available.
-- 
-
+There are differnet examples available:
+- start, for beginners
+- usbtest
+- Using Adafruit Feather RP2350, NeoKey 1x4, Stemma QT Rotary Encoder and 4x20 I2C LCD Display
+	- BOX1_S_LCD_I2C with a simple parameter list
+	- BOX2_S_LCD_I2C with catagory and fixed parameter list
+	- BOX3_S_LCD_I2C with catagory and dynamic parameters
+- Using hardware buttons, encoders and 4x20 LCD
+	- BOX4_C_LCD with catagory and fixed parameter list
+	- BOX5_C_LCD with catagory and dynamic parameters
+- TBD examples for Touchscreens and Ethernet
 
 ## Library
-I used the Raspberry Pi Pico 2 for development, let me know if there are 
-problem with other borads / microcontrollers.<br>
+I used the Raspberry Pi Pico(2) for development, let me know if there are problem with other boards / microcontrollers.<br>
 The library itself use the `std::string` and `std::vector` C++ library so only modern Microcontrollers which enough RAM and C++ Standard Libraries are supported<br>
-Therefore you must use `.c_str()` functionality to convert it to conventional char arrays<br>
+Therefore you must use `.c_str()` functionality to convert it to conventional char arrays.<br>
 
 Recommanded libraries for your projects
 - Ethernet
-	- Ethernet3 https://github.com/sstaub/Ethernet3 for WIZnet 5500 chips with MAC support for Pico
-	- WIZnet W55RP20 https://github.com/WIZnet-ioNIC/W55RP20-Ethernet3
-	- QNEthernet https://github.com/ssilverman/QNEthernet for Teensy 4.1
+	- Ethernet3 [https://github.com/sstaub/Ethernet3](https://github.com/sstaub/Ethernet3) for WIZnet 5500 chips with MAC support for Pico
+	- QNEthernet [https://github.com/ssilverman/QNEthernet](https://github.com/ssilverman/QNEthernet) for Teensy 4.1
 - LCD Displays
-	- HD44780 https://github.com/sstaub/LCD-HD44780
-	- HD44780 with I2C https://github.com/sstaub/LCD-I2C-HD44780
+	- HD44780 [https://github.com/sstaub/LCD-HD44780]([https://github.com/sstaub/LCD-HD44780](https://github.com/sstaub/LCD-HD44780))
+	- HD44780 with I2C [https://github.com/sstaub/LCD-I2C-HD44780](https://github.com/sstaub/LCD-I2C-HD44780)
 - Touchscreen Nextion
-	- https://nextion.tech
-	- NextionX3 https://github.com/sstaub/NextionX3 for Nextion Touchscreens
+	- NextionX3 [https://github.com/sstaub/NextionX3](https://github.com/sstaub/NextionX3) for Nextion Touchscreens
 - I/O Expanders
-	- A/D MCP3208 (SPI) https://github.com/sstaub/MCP_3208
-	- I/O MCP23017 (I2C) https://github.com/sstaub/MCP_23017
-- Adafruit Seesaw Endocder and Keys
-  - https://github.com/sstaub/Seesaw
+	- A/D MCP3208 (SPI) [https://github.com/sstaub/MCP_3208](https://github.com/sstaub/MCP_3208)
+	- I/O MCP23017 (I2C) [https://github.com/sstaub/MCP_23017](https://github.com/sstaub/MCP_23017)
+- Adafruit Seesaw Endcoder and Keys
+  - [https://github.com/sstaub/Seesaw]([https://github.com/sstaub/Seesaw](https://github.com/sstaub/Seesaw))
 
 ## IDE's
 
 - VS Code with PlatformIO [https://platformio.org](https://platformio.org) is the a recommanded IDE
-- VS Code with "pioarduino" extension which allows clang support
-- VS Code with "Arduino Maker Workshop" extension
+- VS Code with "pioarduino" [https://marketplace.visualstudio.com/items?itemName=pioarduino.pioarduino-ide](https://marketplace.visualstudio.com/items?itemName=pioarduino.pioarduino-ide) extension which allows clang support [https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
+- VS Code with "Arduino Maker Workshop" [https://marketplace.visualstudio.com/items?itemName=TheLastOutpostWorkshop.arduino-maker-workshop](https://marketplace.visualstudio.com/items?itemName=TheLastOutpostWorkshop.arduino-maker-workshop) extension
 - You could try also the Theia IDE [https://theia-ide.org](https://theia-ide.org)
 - Arduino IDE 2.x [https://www.arduino.cc/en/software](https://www.arduino.cc/en/software)
 
@@ -75,7 +80,7 @@ Recommanded libraries for your projects
 The main development platform is the Raspberry Pi Pico(2) based on the RP2040/RP2350 microcontroller.<br>
 Only boards with native USB are supported, in the moment this is RaspeberryPI Pico(2) and Teensy (3.5 and 4.1),
 these boards have also native `printf` support.<br>
-From Arduino it should work with boards like GIGA or Arduin Uno Q.<br>
+From Arduino it should work with boards like GIGA or Arduino Uno Q.<br>
 
 **Pro of the Picos**
 
@@ -96,8 +101,9 @@ It is recommended to use the Earl E. Philhower Core [https://github.com/earlephi
 ### Adafruit Seesaw
 
 Support for Adafruits Seesaw I2C modules which makes hardware setup very simple.<br>
-- Encoder [https://www.adafruit.com/product/5880]([https://wiznet.io](https://www.adafruit.com/product/5880)) 
-- NeoKey 1x4 [https://www.adafruit.com/product/4980]([https://www.adafruit.com/product/5880](https://www.adafruit.com/product/4980))
+- Encoder [https://www.adafruit.com/product/4991](https://www.adafruit.com/product/4991)
+
+- NeoKey 1x4 [https://www.adafruit.com/product/4980](https://www.adafruit.com/product/4980)
 
 ### Buttons and Encoders
 
@@ -240,8 +246,7 @@ void setup () {
 ```
 
 ## Examples
-[TODO]
-
+TBD
 
 # Documention eOS3 class basics
 
@@ -250,7 +255,7 @@ You must include the header file in the beginning of the sketch.<br>
 
 ## begin() USB
 
-Set the USB interface.
+Set the USB interface. !Hint! Because of an EOS Bug [EOS-54520] you will not receive all necessary data until you reselect your channels.
 
 ```cpp
 void begin();
@@ -332,6 +337,29 @@ void loop() {
   }
 ```
 
+## reboot()
+Reboot your microcontroller, this is necessary to clear all data after connection lost. Only available for Pico and Teensy (not tested), must done in `disconnect()`
+```cpp
+void update();
+```
+
+**Example**
+```cpp
+#include "eOS3.h"
+eOS3 eos;
+
+void setup() {
+  // ...
+  }
+
+void disconnect() {
+  // ...
+  eos.reboot();
+  // ...
+  }
+```
+
+
 # eOS3 Helper functions
 
 Small functions to improve workflow.
@@ -358,7 +386,7 @@ void filterRemove(string pattern);
 
 **Example**
 ```cpp
-eos.filterRemove("/eos/out/param/*"); // only parameter messages will send to the endpoint
+eos.filterRemove("/eos/out/param/*");
 ```
 
 ## filterClear()
@@ -406,7 +434,7 @@ void ping(int32_t number); // send a ping with a number
 **Example**
 
 ```cpp
-eos.ping("hello OSC"); // will send a ping with a message
+eos.ping("hello EOS"); // will send a ping with a message
 ```
 
 ## reset()
@@ -460,9 +488,9 @@ void user(int16_t userID);
 ```
 
 - **userID** the ID of the user
-		- **0** is the background user
-		- **-1** is the current user
-		- or any other user
+	- **0** is the background user
+	- **-1** is the current user
+	- or any other user ID
 
 **Example**
 
