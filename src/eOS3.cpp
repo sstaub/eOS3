@@ -1,4 +1,5 @@
 #include "eOS3.h"
+#include <strings.h>
 
 OSC osc;
 
@@ -32,6 +33,7 @@ uint8_t intensTick = 8;
 uint8_t accelerationTick = 8;
 bool state2nd = false;
 bool state3rd = false; 
+
 
 /*******************************************************************************
  * The master class eOS3
@@ -77,15 +79,12 @@ void eOS3::update() {
 		}
 	if (lastMessageRxTime > 0) {
 		uint32_t diff = millis() - lastMessageRxTime;
-		// We first check if it's been too long and we need to time out
 		if (diff > TIMEOUT_AFTER_IDLE_MS) {
 			connectedToEos = false;
 			lastMessageRxTime = 0;
 			timeoutPingSend = false;
 			callbackDisconnect();
 			}
-		// It could be the console is sitting idle. Send a ping once to
-		// double check that it's still there, but only once after 2.5s have passed
 		if (!timeoutPingSend && diff > PING_AFTER_IDLE_MS) {
 			ping();
 			timeoutPingSend = true;
@@ -148,6 +147,7 @@ void eOS3::initFaders(uint8_t faders, uint8_t index, uint8_t page) {
 void eOS3::initDS(button_t type, uint8_t buttons, uint8_t index, uint16_t page, bool flexi) {
 	osc.message(patternDS(type, buttons, index, page, flexi));
 	}
+
 
 /*******************************************************************************
  * Shift button class
@@ -221,6 +221,7 @@ void Shift::update(bool state) {
 			}
 		}
 	}
+
 
 /*******************************************************************************
  * Accelaration button class
@@ -364,6 +365,7 @@ void Control2nd::update(bool state) {
 		}
 	}
 
+
 /*******************************************************************************
  * 3rd button control class
 *******************************************************************************/
@@ -433,6 +435,7 @@ void Control3rd::update(bool state) {
 		}
 	}
 
+
 /*******************************************************************************
  * Button class
 *******************************************************************************/
@@ -485,6 +488,7 @@ void Button::update(bool state) {
 		}
 	}
 
+
 /*******************************************************************************
  * Button2nd class
 *******************************************************************************/
@@ -531,6 +535,7 @@ void Button2nd::update(bool state) {
 		}
 	}
 
+
 /*******************************************************************************
  * Button3rd class
 *******************************************************************************/
@@ -576,6 +581,7 @@ void Button3rd::update(bool state) {
 		else last = false;
 		}
 	}
+
 
 /*******************************************************************************
  * Wheel class
@@ -702,6 +708,7 @@ void Wheel::update(int32_t motion) {
 		}
 	osc.message(wheelMsg, encoderMotion);
 	}
+
 
 /*******************************************************************************
  * Encoder class
@@ -853,6 +860,7 @@ void Encoder::update(int32_t motion) {
 	osc.message(wheelMsg, encoderMotion);
 	}
 
+
 /*******************************************************************************
  * Absolute levels class
 *******************************************************************************/
@@ -929,6 +937,7 @@ void AbsoluteLevels::update(bool state) {
 		}
 	}
 
+
 /*******************************************************************************
  * Direct select class
 *******************************************************************************/
@@ -969,6 +978,7 @@ void DS::update(bool state) {
 		else last = false;
 		}
 	}
+
 
 /*******************************************************************************
  * Direct select handle class
@@ -1190,6 +1200,7 @@ void ButtonDSType::update(bool state) {
 		}
 	}
 
+
 /*******************************************************************************
  * Submaster class
 *******************************************************************************/
@@ -1291,6 +1302,7 @@ void Submaster::updateFire(bool fireState) {
 			}
 		}
 	}
+
 
 /*******************************************************************************
  * Fader class
@@ -1501,6 +1513,7 @@ void Fader::updateLoad(bool loadState) {
 			}
 		}
 	}
+
 
 /*******************************************************************************
  * Fader handling class
@@ -1731,6 +1744,7 @@ void FaderTool::update(bool stateUp, bool stateDown) {
 		}
 	}
 
+
 /*******************************************************************************
  * Parameter list handling class
 *******************************************************************************/
@@ -1839,7 +1853,10 @@ string SelectParameter::parameter(uint8_t encoder) {
 string SelectParameter::alias(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return "";
 	if (encoder > 0 && encoder <= encoders) {
-		return param[idx[encoder - 1]].alias;
+		if (param[idx[encoder - 1]].alias.size())
+			return param[idx[encoder - 1]].alias;
+		else
+			return param[idx[encoder - 1]].parameter;
 		}
 	return "";
 	}
@@ -1958,6 +1975,7 @@ void SelectParameter::update(bool stateUp, bool stateDown) {
 		}
 	}
 
+
 /*******************************************************************************
  * Parameter category list handling class
 *******************************************************************************/
@@ -1975,14 +1993,14 @@ SelectCategory::SelectCategory(uint8_t pinIntens, uint8_t pinFocus, uint8_t pinC
 		}
 	this->encoders = encoders;
 	idx = new int [encoders];
-	for (uint8_t i = 0; i < encoders; i++) idx[i] = i;
+	for (uint8_t i = 0; i < encoders; i++) idx[i] = -1;
 	categoryData[INTENSITY].currentPage = 1;
 	}
 
 SelectCategory::SelectCategory(uint8_t encoders) {
 	this->encoders = encoders;
 	idx = new int [encoders];
-	for (uint8_t i = 0; i < encoders; i++) idx[i] = i;
+	for (uint8_t i = 0; i < encoders; i++) idx[i] = -1;
 	categoryData[INTENSITY].currentPage = 1;
 	}
 
@@ -2005,6 +2023,11 @@ void SelectCategory::parameter(category_t category, string parameter, string ali
 	categoryData[category].parameters = param[category].size();
 	categoryData[category].currentPage = 1;
 	categoryData[category].pages = 1;
+	if (category == INTENSITY) { // for idx for startup
+		if (param[INTENSITY].size() && param[INTENSITY].size() <= encoders) {
+			idx[param[INTENSITY].size() - 1] = param[INTENSITY].size() - 1;
+			}
+		}
 	if (categoryData[category].parameters > encoders) {
 		categoryData[category].pages = categoryData[category].parameters / encoders;
 		if (categoryData[category].parameters % encoders) categoryData[category].pages++;
@@ -2066,7 +2089,6 @@ string SelectCategory::parameter(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return "";
 	if (encoder > 0 && encoder <= encoders) {
 		if (categoryData[currentCategory].parameters > 0) {
-			if (param[currentCategory][idx[encoder - 1]].alias.size()) return param[currentCategory][idx[encoder - 1]].alias;
 			return param[currentCategory][idx[encoder - 1]].parameter;
 			}
 		}
@@ -2076,8 +2098,12 @@ string SelectCategory::parameter(uint8_t encoder) {
 string SelectCategory::alias(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return "";
 	if (encoder > 0 && encoder <= encoders) {
-		if (categoryData[currentCategory].parameters > 0)
-			return param[currentCategory][idx[encoder - 1]].alias;
+		if (categoryData[currentCategory].parameters > 0) {
+			if (param[currentCategory][idx[encoder - 1]].alias.size())
+				return param[currentCategory][idx[encoder - 1]].alias;
+			else
+				return param[currentCategory][idx[encoder - 1]].parameter;
+			}
 		}
 	return "";
 	}
@@ -2226,6 +2252,7 @@ void SelectCategory::update(category_t category) {
 		}
 		indexEncoder(category);
 	}
+
 
 /*******************************************************************************
  * Parameter category dynamic handling class
@@ -2537,6 +2564,7 @@ void SelectDynamic::update(category_t category) {
 		}
 		indexEncoder(category);
 	}
+
 
 /*******************************************************************************
  * Special parser classes
@@ -3103,6 +3131,7 @@ string EventState::state() {
 	else return "LIVE";
 	}
 
+
 /*******************************************************************************
  * Helpers for creating patterns
 *******************************************************************************/
@@ -3323,6 +3352,7 @@ string patternAbsolute(levels_t function, string param) {
 		return pattern;
 	}
 
+
 /*******************************************************************************
  * Helpers for general data conversion
 *******************************************************************************/
@@ -3330,6 +3360,7 @@ string patternAbsolute(levels_t function, string param) {
 string ftos(float float32, uint8_t digits) {
 	return to_string(float32).substr(0, to_string(float32).find(".") + digits + 1);
 	}
+
 
 /*******************************************************************************
  * OSC handling

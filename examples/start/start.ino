@@ -1,6 +1,6 @@
 /*
 eOS3 library for USB and Ethernet UDP/TCP is placed under the MIT license
-Copyright (c) 2025 Stefan Staub
+Copyright (c) 2026 Stefan Staub
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -53,7 +53,6 @@ void setup() {
 
 	// initialise connection
 	eos.begin(); // for USB connection
-
 	}
 
 void loop() {
@@ -91,4 +90,5 @@ void disconnected() {
 	put all things here when the connection failed like splash screen
 	*/
 
+	eos.reboot(); // clears all data and wait for reconnecting, available for Pico and Teensy
 	}

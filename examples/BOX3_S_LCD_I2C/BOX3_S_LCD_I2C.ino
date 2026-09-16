@@ -5,13 +5,17 @@
 #include "LCDi2c.h"
 #include "Seesaw.h"
 
+// put all #defines here, e.g. for buttons, encoders, lcd ...
 #define LCD_ROWS    4
 #define LCD_COLUMNS 20
 
+// put all the class initialisers here
 eOS3 eos;
-
 LCDi2c lcd; // default I2C address 0x27
-
+SeesawEncoder encS1(0x36); // default I2C address 0x36
+SeesawEncoder encS2(0x37); // default I2C address 0x37, A0 bridged
+SeesawNeoKey4 keyA(0x30); // default I2C address 0x30
+SeesawNeoKey4 keyB(0x31); // default I2C address 0x31, A0 bridged
 Encoder enc1(REVERSE);
 AbsoluteLevels enc1Button(HOME, PARAMETER);
 Encoder enc2(REVERSE);
@@ -22,25 +26,27 @@ Button2nd btn2_2nd(KEY, "Last");
 Button2nd btn3_2nd(KEY, "Select_Last");
 Button2nd btn4_2nd(KEY, "Select_Manual");
 Button2nd btn5_2nd(KEY, "Select_Active");
-Button2nd btn6_2nd(KEY, "Clear");
+Button2nd btn6_2nd(KEY, "Clear_Cmd");
 Channel channel;
 Shift shift;
 Acceleration acc;
 Control2nd btn2nd;
 
-void updateDisplayDyn();
+// function prototypes
+void display(); // callback for updating page and parameter data
 
 void setup() {
+	// put your setup code here, to run once
 	lcd.begin(LCD_ROWS, LCD_COLUMNS);
 	lcd.cls();
-	lcd.printf("eOS3 v1.0.0");
+	lcd.print("eOS3 v1.0.0");
 	lcd.locate(2, 1);
-	lcd.printf("connecting ...");
+	lcd.print("Connecting ...");
 	encS1.begin(); // start I2C communication of encoder 1
 	encS2.begin(); // start I2C communication of encoder 2
 	keyA.begin(); // start I2C communication of key 1x4
 	keyB.begin(); // start I2C communication of key 1x4
-	dyn.callback(updateDisplayDyn);
+	dyn.callbackPage(display);
 	// here you can more aliases to fit parameter name to display, this is for JB P10 and Sola Theatre
 	dyn.alias("Intensity Mode", "Mode");
 	dyn.alias("Intensity Macros", "Macros");
@@ -109,7 +115,7 @@ void maintain() {
 		lcd.clp(4, 1, 10);
 		lcd.locate(4, 1);
 		if (dyn.active(1))
-			lcd.printf("%.3f", dyn.value(1));
+			lcd.print(dyn.value(1), 3);
 		return;
 		}
 
@@ -117,7 +123,7 @@ void maintain() {
 		lcd.clp(4, 11, 10);
 		lcd.locate(4, 11);
 		if (dyn.active(2))
-			lcd.printf("%.3f", dyn.value(2));
+			lcd.print(dyn.value(2), 3);
 		return;
 		}
 
@@ -139,13 +145,13 @@ void connected() {
 	*/
 	lcd.clr(2);
 	lcd.locate(2, 1);
-	lcd.printf("connected!");
+	lcd.print("Connected!");
 	delay(1000);
 	lcd.cls();
 	lcd.locate(1, 1);
 	lcd.clr(1);
-	lcd.printf("Chan ");
-	updateDisplayDyn();
+	lcd.print("Chan ");
+	display();
 	}
 
 void disconnected() {
@@ -155,29 +161,40 @@ void disconnected() {
 	if you don't need it, leave it empty!
 	put all things here when the connection failed like splash screen
 	*/
+	lcd.cls();
+	lcd.print("Connection fail!");
+	delay(1000);
+	lcd.locate(2, 1);
+	lcd.print("Rebooting ...");
+	delay(1000);
+	eos.reboot();
 	}
 
-void updateDisplayDyn() {
+void display() {
 	enc1.parameter(dyn.parameter(1));
 	enc2.parameter(dyn.parameter(2));
 	enc1Button.parameter(dyn.parameter(1));
 	enc2Button.parameter(dyn.parameter(2));
 	lcd.clr(2);
 	lcd.locate(2, 1);
-	lcd.printf("%s %d/%d", dyn.categoryName().c_str(), dyn.page(), dyn.pages());
+	lcd.print(dyn.categoryName().c_str());
+	lcd.print(" ");
+	lcd.print(dyn.page());
+	lcd.print("/");
+	lcd.print(dyn.pages());
 	lcd.clr(3);
 	lcd.locate(3, 1);
-	lcd.printf("%.10s", dyn.alias(1).c_str());
+	lcd.print(dyn.alias(1).c_str());
 	lcd.locate(3, 11);
-	lcd.printf("%.10s", dyn.alias(2).c_str());
+	lcd.print(dyn.alias(2).c_str());
 	lcd.clr(4);
 	if (dyn.active(1))
-		lcd.printf("%.3f", dyn.value(1));
+		lcd.print(dyn.value(1), 3);
 	else
 		lcd.clp(4, 1, 10);
 	lcd.locate(4, 11);
 	if (dyn.active(2))
-		lcd.printf("%.3f", dyn.value(2));
+		lcd.print(dyn.value(2), 3);
 	else
 		lcd.clp(4, 11, 10);
 	}

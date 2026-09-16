@@ -41,11 +41,11 @@ THE SOFTWARE.
 #include "eOS3.h"
 // put the headers of other libraries you want to use here
 
-// put all #defines here, e.g. for buttons ...
-	#define LED LED_BUILTIN
-// put all variables here
-	bool state;
-	uint32_t tick = millis();
+// put all #defines here, e.g. for buttons, encoders, lcd ...
+#define LED LED_BUILTIN
+// put all global variables here
+bool state;
+uint32_t tick = millis();
 // put all the class initialisers here
 eOS3 eos;
 
@@ -54,7 +54,6 @@ void setup() {
 	pinMode(LED, OUTPUT);
 	digitalWrite(LED, true);
 	eos.begin(); // for USB connection
-
 	}
 
 void loop() {
@@ -95,5 +94,5 @@ void disconnected() {
 	if you don't need it, leave it empty!
 	put all things here when the connection failed like splash screen
 	*/
-
+	eos.reboot();
 	}

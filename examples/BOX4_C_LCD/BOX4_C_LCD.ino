@@ -4,7 +4,7 @@
 #include "LCD.h"
 #include "eOS3.h"
 
-
+// put all #defines here, e.g. for buttons, encoders, lcd ...
 #define ENC_1_A      11
 #define ENC_1_B      12
 #define ENC_1_BTN    10
@@ -18,8 +18,8 @@
 #define BTN_IMAGE    6
 #define BTN_FORM     7
 #define BTN_SHUTTER  8
-#define BTN_ACC      9
-#define BTN_SHIFT    5
+#define BTN_ACC      5
+#define BTN_SHIFT    9
 
 #define LCD_RS       21
 #define LCD_ENABLE   20
@@ -31,10 +31,9 @@
 #define LCD_ROWS     4
 #define LCD_COLUMNS  20
 
-LCD lcd(LCD_RS, LCD_ENABLE, LCD_D4, LCD_D5, LCD_D6, LCD_D7); // rs, enable, d4, d5, d6, d7
-
+// put all the class initialisers here
 eOS3 eos;
-
+LCD lcd(LCD_RS, LCD_ENABLE, LCD_D4, LCD_D5, LCD_D6, LCD_D7); // rs, enable, d4, d5, d6, d7
 Shift shift(BTN_SHIFT);
 Acceleration accelaration(BTN_ACC);
 Control2nd button2nd(BTN_ACC);
@@ -43,54 +42,30 @@ AbsoluteLevels enc1Button(ENC_1_BTN, HOME, PARAMETER);
 Encoder enc2(ENC_2_A, ENC_2_B, REVERSE);
 AbsoluteLevels enc2Button(ENC_2_BTN, HOME, PARAMETER);
 SelectCategory category(BTN_INTENS, BTN_FOCUS, BTN_COLOR, BTN_IMAGE, BTN_FORM, BTN_SHUTTER, 2);
-Channel channel;
+Channel chan;
 Button2nd btn1_2nd(BTN_INTENS, KEY, "Next");
 Button2nd btn2_2nd(BTN_IMAGE, KEY, "Last");
 Button2nd btn3_2nd(BTN_FOCUS, KEY, "Select_Last");
 Button2nd btn4_2nd(BTN_COLOR, KEY, "Select_Manual");
 Button2nd btn5_2nd(BTN_FORM, KEY, "Select_Active");
-Button2nd btn6_2nd(BTN_SHUTTER, KEY, "Clear");
+Button2nd btn6_2nd(BTN_SHUTTER, KEY, "Clear_Cmd");
 
-void updateDisplayDyn();
-
-void encoder(uint8_t enc) {
-	if (enc == 1) {
-		lcd.clp(4, 1, 10);
-		lcd.locate(4, 1);
-		if (category.active(1))
-			lcd.print(category.value(1), 3);
-		return;
-		}
-
-	if (enc == 2) {
-		lcd.clp(4, 11, 10);
-		lcd.locate(4, 11);
-		if (category.active(2))
-			lcd.print(category.value(2), 3);
-		return;
-		}
-	}
-
-void chan() {
-	lcd.locate(1, 1);
-	lcd.clr(1);
-	lcd.printf("Chan %.15s", channel.selection().c_str());
-	}
+// function prototypes
+void display(); // callback for page and parameter data updates
+void encoder(uint8_t enc); // callback for encoder value updates
+void channel(); // callback for channel selection updates
 
 void setup() {
-	pinMode(LED_BUILTIN, OUTPUT);
-	//pinMode(BTN_SHIFT, INPUT_PULLUP);
-	Serial.begin(11520);
+	// put your setup code here, to run once
 	lcd.begin(LCD_ROWS, LCD_COLUMNS);
 	lcd.cls();
 	lcd.print("eOS3 v1.0.0");
 	lcd.locate(2, 1);
-	lcd.print("connecting ...");
-	channel.callback(chan);
-	category.callbackPage(updateDisplayDyn);
+	lcd.print("Connecting ...");
+	chan.callback(channel);
+	category.callbackPage(display);
 	category.callbackEncoder(encoder);
 	category.parameter(INTENSITY, "Intens");
-	category.parameter(INTENSITY, "");
 	category.parameter(FOCUS, "Pan");
 	category.parameter(FOCUS, "Tilt");
 	category.parameter(FOCUS, "X Focus");
@@ -128,6 +103,7 @@ void setup() {
 	}
 
 void loop() {
+	// put update functions for buttons and encoders here
 	eos.update();
 	shift.update();
 	accelaration.update();
@@ -146,27 +122,52 @@ void loop() {
 	}
 
 void maintain() {
-	channel.parse();
+	/*
+	maintain() is called when new OSC data comes in
+	this function should not deleted to work the whole code properly!
+	if you don't need it, leave it empty!
+	put all your parsers and display handling here
+	*/
+	chan.parse();
 	category.parse();
 	}
 
 void connected() {
+	/*
+	connected() is called when a new connection is established
+	this function should not deleted to work the whole code properly!
+	if you don't need it, leave it empty!
+	put all the init functions for fader and direct selects here,
+	also filters and subscribtions
+	*/
 	lcd.clr(2);
 	lcd.locate(2, 1);
-	lcd.print("connected!");
+	lcd.print("Connected!");
 	delay(1000);
 	lcd.cls();
 	lcd.locate(1, 1);
 	lcd.clr(1);
 	lcd.print("Chan ");
-	updateDisplayDyn();
+	display();
 	}
 
 void disconnected() {
-	Serial.println("Disconnected");
+	/*
+	disconnected() is called when a connection failed
+	this function should not deleted to work the whole code properly!
+	if you don't need it, leave it empty!
+	put all things here when the connection failed like splash screen
+	*/
+	lcd.cls();
+	lcd.print("Connection fail!");
+	delay(1000);
+	lcd.locate(2, 1);
+	lcd.print("Rebooting ...");
+	delay(1000);
+	eos.reboot();
 	}
 
-void updateDisplayDyn() {
+void display() {
 	enc1.parameter(category.parameter(1));
 	enc2.parameter(category.parameter(2));
 	enc1Button.parameter(category.parameter(1));
@@ -180,17 +181,41 @@ void updateDisplayDyn() {
 	lcd.print(category.pages());
 	lcd.clr(3);
 	lcd.locate(3, 1);
-	lcd.printf("%.10s", category.alias(1).c_str());
+	lcd.print(category.alias(1).c_str());
 	lcd.locate(3, 11);
-	lcd.printf("%.10s", category.alias(2).c_str());
+	lcd.print(category.alias(2).c_str());
 	lcd.clr(4);
-	if (category.active(1))
+	if(category.active(1)) {
+		lcd.locate(4, 1);
 		lcd.print(category.value(1), 3);
-	else
-		lcd.clp(4, 1, 10);
-	lcd.locate(4, 11);
-	if (category.active(2))
+		}
+	if(category.active(2)) {
+		lcd.locate(4, 11);
 		lcd.print(category.value(2), 3);
-	else
+		}
+	}
+
+	void encoder(uint8_t enc) {
+	if (enc == 1) {
+		lcd.clp(4, 1, 10);
+		lcd.locate(4, 1);
+		if (category.active(1))
+			lcd.print(category.value(1), 3);
+		return;
+		}
+
+	if (enc == 2) {
 		lcd.clp(4, 11, 10);
+		lcd.locate(4, 11);
+		if (category.active(2))
+			lcd.print(category.value(2), 3);
+		return;
+		}
+	}
+
+void channel() {
+	lcd.locate(1, 1);
+	lcd.clr(1);
+	lcd.print("Chan: ");
+	lcd.print(chan.selection().c_str());
 	}
