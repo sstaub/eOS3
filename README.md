@@ -41,7 +41,7 @@ There are differnet examples available:
 	- BOX1_S_LCD_I2C with a simple parameter list
 	- BOX2_S_LCD_I2C with catagory and fixed parameter list
 	- BOX3_S_LCD_I2C with catagory and dynamic parameters
-- Using hardware buttons, encoders and 4x20 LCD
+- Using Raspberry Pi Pico, hardware buttons, encoders and 4x20 LCD
 	- BOX4_C_LCD with catagory and fixed parameter list
 	- BOX5_C_LCD with catagory and dynamic parameters
 - TBD examples for Touchscreens and Ethernet
@@ -545,7 +545,6 @@ void connected() {
 ```
 
 # Classes
-
 
 ## Shift()
 
