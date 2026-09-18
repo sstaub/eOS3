@@ -581,16 +581,34 @@ void mode(buttonMode_t modus);
 
 - **modus** change between PUSH and TOGGLE
 
+
+
 #### tick()
 
+Because Shift does also works as an acceleration button for Intens parameter, tick() allows to change the tick rate.
+
+```cpp
+void tick(uint8_t tick = 8);
+```
+
+- **tick** tick rate, default 8 ticks
+
+
 #### state()
+
+Get the current state of the **Shift** button.
+
+```cpp
+bool state();
+```
 
 **Example**
 
 ```cpp
-Shift shift(4) // init class and use pin 4 for the SHIFT button
+Shift shift(3) // init class and use pin 3 for the SHIFT button
 void setup() {
   shift.mode(TOGGLE);
+  shift.tick(4); // set tick rate to 4 ticks
   }
 void loop() {
   shift.update();
@@ -599,23 +617,68 @@ void loop() {
 
 ## accelerationButton()
 
-This function allows you to assign a hardware button as a **Accelaration** button. **Accelaration** set the encoder and wheel messages to a multiplier mode to accelerate the output. ```#define BUTTON_ACC 8``` controls the multiplier.
+This function allows you to assign a hardware button as a **Accelaration** button. **Accelaration** set the encoder and wheel messages to a multiplier mode to accelerate the output.
 
 ```cpp
 void accelarationButton(uint8_t pin);
+Acceleration();
 ```
 
-- **pin** number of the pin you want to use for Acceleration
+- **pin** number of the pin you want to use for Acceleration, not needed for virtual devices
+
+### Methods
+
+#### update()
+
+Update must done regulary in `loop()` to check the state of the shift button.
+
+```cpp
+void update();
+void update(bool state); // for virtual devices
+```
+
+#### mode()
+
+Mode allows you set the shift button in Toggle mode
+
+```cpp
+void mode(buttonMode_t modus);
+```
+
+- **modus** change between PUSH and TOGGLE
+
+#### tick()
+
+Change the tick rate.
+
+```cpp
+void tick(uint8_t tick = 8);
+```
+
+- **tick** tick rate, default 8 ticks
+
+
+#### state()
+
+Get the current state of the **Acceleration** button.
+
+```cpp
+bool state();
+```
 
 **Example**
 
 ```cpp
+Acceleration acc(4) // init class and use pin 4 for the Acceleration button
 void setup() {
-	// ...
-	shiftButton(5); // use pin 5 for the Acceleration button
-	// ...
-	}
+  acc.mode(TOGGLE);
+  acc.tick(4); // set tick rate to 4 ticks
+  }
+void loop() {
+  acc.update();
+  }
 ```
+
 
 ## Button
 
@@ -623,6 +686,16 @@ With this new universal class you can create generic buttons. In the moment foll
 - RAW send a raw message (without arguments)
 - KEY send a key press
 - MACRO fires a macro
+- IP, CP, FP, BP palettes
+- PRESET
+- CHAN
+- GROUP
+- FX (Effect)
+- PIXMAP
+- CURVE
+- SNAPSHOT
+- SCENE
+- SC (show control)
 
 ### Constructor
 
@@ -633,44 +706,13 @@ Button(uint8_t pin, button_t type, strng);
 Button(uint8_t pin, button_t type, int number);
 ```
 
-- **pin** the connection pin for the button hardware
-- **type** the function type, RAW, KEY or MACRO
-- **strng** optional RAW message or KEY name
-- **number** optional for MACRO number
+- **pin** pin for the button hardware, not needed for virtual devices
+- **type** the function type, RAW, KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, FX, PIXMAP, CURVE, SNAPSHOT, SCENE, SC
+- **strng** for RAW message (without an argument) or KEY name
+- **number** for e.g. MACRO number
 
-**Example**
-
-```cpp
-Button next(2, KEY, "Next"); // make a new osc button on Pin 2
-Button last(3, KEY, "Last"); // make a new osc button on Pin 3
-```
 
 ### Methods
-
-#### osc2nd()
-
-Add a second layer for an additional OSC button. Use SHIFT + button press.
-
-```cpp
-void osc2nd(button_t type, const char strng[]);
-void osc2nd(button_t type, int number);
-```
-
-- **type** the function type, RAW, KEY or MACRO
-- **strng** optional RAW message or KEY name
-- **number** optional for MACRO number
-
-This must done in ```setup()``` 
-
-**Example**
-```cpp
-void setup() {
-	// ...
-	next.osc2nd(MACRO, 801); // SHIFT + Next button fires macro 801
-	last.osc2nd(MACRO, 802); // SHIFT + Last button fires macro 802
-	// ...
-	}
-```
 
 #### update()
 
@@ -678,17 +720,108 @@ To get the current button state you must call inside the ```loop()```
 
 ```cpp
 void update();
+void update(bool state); // for virtual devices
 ```
 
 **Example**
 
 ```cpp
+Button next(2, KEY, "Next"); // make a new osc button on Pin 2
+Button last(3, KEY, "Last"); // make a new osc button on Pin 3
+void setup() {
+	// ...
+	}
 void loop() {
 	// ...
 	next.update();
 	last.update();
 	// ...
 	}
+```
+
+## Button2nd, Button3rd
+
+This classes allows up to two additional underlaying **Button** objects. They will controlled by the **Control2nd** and **Control3rd** classes. It works the same way as the **Button** object. It works with **Button** objects but also with all other control buttons exept **Fader** and **Submaster** classes.
+
+### Constructor
+
+Create a new OSC button object. This should done before ```setup()```
+
+```cpp
+Button2nd(uint8_t pin, button_t type, strng);
+Button2nd(uint8_t pin, button_t type, int number);
+Button3rd(uint8_t pin, button_t type, strng);
+Button2rd(uint8_t pin, button_t type, int number);
+```
+
+### Methods
+
+#### update()
+
+To get the current button state you must call inside the ```loop()```
+
+```cpp
+void update();
+void update(bool state); // for virtual devices
+```
+
+## Control2nd, Control3rd
+
+This classes allow you to control the underlaying **Button2nd** and **Button3rd** functionality. You can do it with an extra pin but also in conjunction with the **Shift** and **Acceleration** classes and works similar to them.
+So you can use the same pin e.g. for **Shift** and **Control2nd**.
+
+### Constructor
+
+Create a new OSC button object. This should done before ```setup()```
+
+```cpp
+Control2nd(uint8_t pin);
+Control2nd();
+Control3rd(uint8_t pin);
+Control3rdd();
+```
+
+- **pin** pin for the control button hardware, not needed for virtual devices
+
+### Methods
+
+#### update()
+
+Update must done regulary in `loop()` to check the state of the control button.
+
+```cpp
+void update();
+void update(bool state); // for virtual devices
+```
+
+#### mode()
+
+Mode allows you set the control button in Toggle mode
+
+```cpp
+void mode(buttonMode_t modus);
+```
+
+- **modus** change between PUSH and TOGGLE
+
+#### state()
+
+Get the current state of the **Acceleration** button.
+
+```cpp
+bool state();
+```
+
+**Example**
+
+```cpp
+Control2nd button2nd(3) // init class and use pin 3 for the control2nd button
+void setup() {
+  button2nd.mode(PUSH);
+  }
+void loop() {
+  button2nd.update();
+  }
 ```
 
 ## Encoder
