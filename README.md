@@ -1367,10 +1367,10 @@ fader1.jitter(2); // set fetch range to +/- 2
 The special parser classes allows to proceed additional data sended by EOS.
 
 ## Softkey
-This class allows you to get softkey data.
+This class allows you to get **Softkey** data.
 
 ### Constructor
-Create a new Softkey object. This should done before `setup()`
+Create a new **Softkey** object. This should done before `setup()`
 ```cpp
 Softkey();
 ```
@@ -1378,7 +1378,7 @@ Softkey();
 ### Methods
 
 #### parse()
-Parse check for new softkey data. This must done in `maintain()`. Return the number (1 - 12) of the last parsed softkey, 0 if there is no data.
+Parse check for new **Softkey** data. This must done in `maintain()`. Return the number (1 - 12) of the last parsed softkey, 0 if there is no data.
 ```cpp
 uint8_t parse();
 ```
@@ -1411,22 +1411,354 @@ void maintain() {
 ```
 
 ## PanTilt
+This class allows you to get **PanTilt** data.
 
+### Constructor
+Create a new **PanTilt** object. This should done before `setup()`
+```cpp
+PanTilt();
+```
+
+### Methods
+
+#### parse()
+Parse check for new **PanTilt** data. This must done in `maintain()`. Return `true` if there are new data.
+```cpp
+bool parse();
+```
+
+#### callback()
+Optional callback when new data arrived.
+```cpp
+void callback(cbptr call);
+``` 
+
+#### active()
+Check if there are valid data. Return `true` if data.
+```cpp
+bool active();
+```
+
+#### pan(), panMin(), panMax(), tilt(), tiltMin(), tiltMax()
+Get the **PanTilt datas** `float`.
+```cpp
+float pan();
+float panMin();
+float panMax();
+float tilt();
+float tiltMin();
+float tiltMax();
+```
+
+**Example**
+```cpp
+PanTilt pantilt;
+void dat() {
+	if (pantilt.active) {
+		float pan = pantilt.pan();
+		// ... same for other values
+		{
+	}
+void setup() {
+	pantilt.callback(data); // function pointer to the callback function
+	}
+void maintain() {
+	pantilt.parse();
+	}
+```
 
 ## XYZ
+This class allows you to get **XYZ** data.
+
+### Constructor
+Create a new **XYZ** object. This should done before `setup()`
+```cpp
+XYZ();
+```
+
+### Methods
+
+#### parse()
+Parse check for new **XYZ** data. This must done in `maintain()`. Return `true` if there are new data.
+```cpp
+bool parse();
+```
+
+#### callback()
+Optional callback when new data arrived.
+```cpp
+void callback(cbptr call);
+``` 
+
+#### active()
+Check if there are valid data. Return `true` if data.
+```cpp
+bool active();
+```
+
+#### x(), y(), z()
+Get the **XYZ** datas `float`.
+```cpp
+float x();
+float y();
+float z();
+```
+
+**Example**
+```cpp
+XYZ xyz;
+void data() {
+	if (xyz.active) {
+		float x = xyz.x();
+		// ... same for other values
+		{
+	}
+void setup() {
+	pantilt.callback(data); // function pointer to the callback function
+	}
+void maintain() {
+	xyz.parse();
+	}
+```
 
 ## HueSat
+This class allows you to get **HueSat** data.
+
+### Constructor
+Create a new **HueSat** object. This should done before `setup()`
+```cpp
+HueSat();
+```
+
+### Methods
+
+#### parse()
+Parse check for new **HueSat** data. This must done in `maintain()`. Return `true` if there are new data.
+```cpp
+bool parse();
+```
+
+#### callback()
+Optional callback when new data arrived.
+```cpp
+void callback(cbptr call);
+``` 
+
+#### active()
+Check if there are valid data. Return `true` if data.
+```cpp
+bool active();
+```
+
+#### hue(), saturation()
+Get the **HueSat** datas `float`.
+```cpp
+float hue();
+float saturation();
+```
+
+#### red(), green(), blue(), color565()
+Get converted **HueSat** datas.
+```cpp
+uint8_t red();
+uint8_t green();
+uint8_t blue();
+uint16_t color565();
+```
+
+**Example**
+```cpp
+HueSat huesat;
+void data() {
+	if (huesat.active) {
+		float hue = huesat.hue();
+		float sat = huesat.saturation();
+		{
+	}
+void setup() {
+	huesat.callback(data); // function pointer to the callback function
+	}
+void maintain() {
+	huesat.parse();
+	}
+```
 
 ## Channel
 
+
+
 ## Command
+
+
 
 ## Cue
 
+
+
 ## Version
+This class allows you to get **Version** data.
+
+### Constructor
+Create a new **Version** object. This should done before `setup()`
+```cpp
+Version();
+```
+
+### Methods
+
+#### version()
+This is an explicit function to tell EOS to send version datas.
+```cpp
+void version();
+```
+
+#### parse()
+Parse check for new **Version** data. This must done in `maintain()`. Returns `true` if state changed
+```cpp
+bool parse();
+```
+
+#### software()
+Returns the software version as a string.
+```cpp
+string software();
+```
+
+#### library()
+Returns the library version name as a string.
+```cpp
+string library();
+```
+
+**Example**
+```cpp
+Version version;
+void data() { // callback function
+	string software = show.software();
+	string library = show.library();
+	}
+void setup() {
+	version.callback(data); // function pointer to the callback function
+	version.version(); //getter for version
+	}
+void maintain() {
+	version.parse();
+	}
+```
 
 ## User
+This class allows you to get **User** data.
+
+### Constructor
+Create a new **User** object. This should done before `setup()`
+```cpp
+User();
+```
+
+### Methods
+
+#### parse()
+Parse check for new **User** data. This must done in `maintain()`. Returns `true` if state changed
+```cpp
+bool parse();
+```
+
+#### user()
+Returns the **User** ID.
+```cpp
+uint16_t user();
+```
+
+**Example**
+```cpp
+User user;
+void data() { // callback function
+	uint16_t user = user.user();
+	}
+void setup() {
+	user.callback(data); // function pointer to the callback function
+	}
+void maintain() {
+	user.parse();
+	}
+```
 
 ## Show
+This class allows you to get **Show** data.
+
+### Constructor
+Create a new **Show** object. This should done before `setup()`
+```cpp
+Show();
+```
+
+### Methods
+
+#### parse()
+Parse check for new **Show** data. This must done in `maintain()`. Returns `true` if state changed
+```cpp
+bool parse();
+```
+
+#### name()
+Returns the **Show** name as a string.
+```cpp
+string name();
+```
+
+**Example**
+```cpp
+Show show;
+void data() { // callback function
+	string showname = show.name();
+	}
+void setup() {
+	show.callback(data); // function pointer to the callback function
+	}
+void maintain() {
+	show.parse();
+	}
+```
 
 ## EventState
+This class allows you to get **EventState** data.
+
+### Constructor
+Create a new **EventState** object. This should done before `setup()`
+```cpp
+EventState();
+```
+
+### Methods
+
+#### parse()
+Parse check for new **EventState** data. This must done in `maintain()`. Returns `true` if state changed
+```cpp
+bool parse();
+```
+
+#### callback()
+Optional callback when new data arrived.
+```cpp
+void callback(cbptr call);
+``` 
+
+#### state()
+Get the state of the **EventState** as a string, this can LIVE or BLIND.
+```cpp
+string state();
+```
+
+**Example**
+```cpp
+EventState eventState;
+void data() { // callback function
+	string event = eventstate.state();
+	}
+void setup() {
+	eventstate.callback(data); // function pointer to the callback function
+	}
+void maintain() {
+	eventstate.parse();
+	}
+```
