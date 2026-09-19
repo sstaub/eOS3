@@ -835,10 +835,11 @@ this should done before the ```setup()```
 
 ```cpp
 Encoder(uint8_t pinA, uint8_t pinB, uint8_t direction = FORWARD);
+Encoder(direction_t direction = FORWARD);
 ```
 
-- **pinA** and **pinB** are the connection Pins for the encoder hardware
-- **direction** is used for changing the direction of the encoder to clockwise if pinA and pinB are swapped. The directions are FORWARD (standard) or REVERSE
+- **pinA** and **pinB** are the connection Pins for the encoder hardware, not needed for virtual devices
+- **direction** is used for changing the direction of the encoder to clockwise if pinA and pinB are swapped. The directions are FORWARD (default) or REVERSE
 
 **Example**
 
@@ -848,33 +849,12 @@ Encoder encoder1(A0, A1, REVERSE);
 
 ### Methods
 
-#### button()
-
-If the Encoder have an extra push button, you can add it with following class method. This must done in ```setup()``` before assigning a parameter.
-A button press post the parameter name to the command line. SHIFT + button press set the parameter to the HOME value.
-
-```cpp
-void button(uint8_t buttonPin);
-```
-
-- **buttonPin** is the pin for the encoder push button
-
-**Example**
-
-```cpp
-void setup() {
-	// ...
-	encoder1.button(A1);
-	// ...
-	}
-```
-
 #### parameter()
 
-Before using the encoder you must assign the parameter you want control. This should done in ```setup()```
+Before using the encoder you must assign the parameter you want control. This should done in ```setup()``` or in control functions for parameters.
 
 ```cpp
-void parameter(const char param[]);
+void parameter(string param);
 ```
 
 - **param** is the Parameter which you want assign
@@ -889,13 +869,59 @@ void setup() {
 	}
 ```
 
+#### parse()
+
+Parse allows you to get parameter data. This can only done when none of the parameter control classes are used.
+If there is an new value, the function return `true`.
+**parse()** must used inside `maintain()`.
+
+```cpp
+bool parse();
+```
+
+#### value()
+
+Get the value of a parameter as an float.
+
+```cpp
+float value();
+```
+
+
+#### active()
+
+Check if there is an active value for the choosen parameter.
+This allows you to supress the output on displays.
+If there is a value, the function return `true`.
+You must use **parse()** before.
+
+```cpp
+bool active();
+```
+
+#### callback()
+
+You can add a callback function, which is triggered when there is a new parameter value inside the **parse()** function.
+This should done in `setup()`.
+
+```cpp
+void callback(cbptr call);
+```
+
+
 #### update()
 
-To get the actual encoder state you must call inside the ```loop()```
+To check the actual encoder state you must call inside the ```loop()```
 
 ```cpp
 void update();
+void update(bool stateA, bool stateB);
+void update(int32_t motion);
 ```
+
+- **stateA** optional for virtual devices
+- **stateA** optional for virtual devices
+- **motion** optional for direct input of the encoder motion, e.g. for Seesaw Encoders
 
 **Example**
 
@@ -906,6 +932,10 @@ void loop() {
 	// ...
 	}
 ```
+
+## Wheel
+
+
 
 ## SelectParameter
 
@@ -983,10 +1013,11 @@ void setup() {
 	selection.parameter(9, "Green");
 	// ...
 	}
+```
 
 #### callback()
 
-Add a callback function, the callback is triggered when page is changed by the Up/Down buttons. The callback can used to update the display. This must done in ```setup()```
+Add a callback function, the callback is triggered when page is changed by the Up/Down buttons. The callback can used to update the display. This must done in `setup()`
 
 ```cpp
 void callback(cbptr callback);
@@ -1331,3 +1362,71 @@ Example
 ```cpp
 fader1.jitter(2); // set fetch range to +/- 2
 ```
+
+# Special parser classes
+The special parser classes allows to proceed additional data sended by EOS.
+
+## Softkey
+This class allows you to get softkey data.
+
+### Constructor
+Create a new Softkey object. This should done before `setup()`
+```cpp
+Softkey();
+```
+
+### Methods
+
+#### parse()
+Parse check for new softkey data. This must done in `maintain()`. Return the number (1 - 12) of the last parsed softkey, 0 if there is no data.
+```cpp
+uint8_t parse();
+```
+
+#### callback()
+Optional callback when new data arrived. The callbackfunktion use `function(uint8_t)` prototype, so you get also the softkey number.
+```cpp
+void callback(cbptr2 call);
+``` 
+
+#### label()
+Get the label of a softkey as a string.
+```cpp
+string label(uint8_t sk);
+```
+- **sk** number (1 - 12) of the softkey
+
+**Example**
+```cpp
+softkey softkey;
+void sk(uint8_t sk) { // callback function
+	string label = softkey.label(sk);
+	}
+void setup() {
+	softkey.callback(sk); // function pointer to the callback function
+	}
+void maintain() {
+	softkey.parse();
+	}
+```
+
+## PanTilt
+
+
+## XYZ
+
+## HueSat
+
+## Channel
+
+## Command
+
+## Cue
+
+## Version
+
+## User
+
+## Show
+
+## EventState
