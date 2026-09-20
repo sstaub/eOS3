@@ -1363,6 +1363,7 @@ Example
 fader1.jitter(2); // set fetch range to +/- 2
 ```
 
+
 # Special parser classes
 The special parser classes allows to proceed additional data sended by EOS.
 
@@ -1422,7 +1423,7 @@ PanTilt();
 ### Methods
 
 #### parse()
-Parse check for new **PanTilt** data. This must done in `maintain()`. Return `true` if there are new data.
+Parse check for new **PanTilt** data. This must done in `maintain()`. Returns `true` if new data.
 ```cpp
 bool parse();
 ```
@@ -1434,7 +1435,7 @@ void callback(cbptr call);
 ``` 
 
 #### active()
-Check if there are valid data. Return `true` if data.
+Check if there are valid data. Return `true` if active data.
 ```cpp
 bool active();
 ```
@@ -1453,11 +1454,13 @@ float tiltMax();
 **Example**
 ```cpp
 PanTilt pantilt;
-void dat() {
-	if (pantilt.active) {
-		float pan = pantilt.pan();
-		// ... same for other values
-		{
+float pan;
+float tilt;
+void data() {
+	if (pantilt.active()) {
+		pan = pantilt.pan();
+		tilt = pantilt.tilt();
+		}
 	}
 void setup() {
 	pantilt.callback(data); // function pointer to the callback function
@@ -1479,7 +1482,7 @@ XYZ();
 ### Methods
 
 #### parse()
-Parse check for new **XYZ** data. This must done in `maintain()`. Return `true` if there are new data.
+Parse check for new **XYZ** data. This must done in `maintain()`. Returns `true` if new data.
 ```cpp
 bool parse();
 ```
@@ -1491,7 +1494,7 @@ void callback(cbptr call);
 ``` 
 
 #### active()
-Check if there are valid data. Return `true` if data.
+Check if there are valid data. Return `true` if active data.
 ```cpp
 bool active();
 ```
@@ -1507,14 +1510,18 @@ float z();
 **Example**
 ```cpp
 XYZ xyz;
+float x;
+float y;
+float z;
 void data() {
-	if (xyz.active) {
-		float x = xyz.x();
-		// ... same for other values
-		{
+	if (xyz.active()) {
+		x = xyz.x();
+		y = xyz.x();
+		z = xyz.x();
+		}
 	}
 void setup() {
-	pantilt.callback(data); // function pointer to the callback function
+	xyz.callback(data); // function pointer to the callback function
 	}
 void maintain() {
 	xyz.parse();
@@ -1533,7 +1540,7 @@ HueSat();
 ### Methods
 
 #### parse()
-Parse check for new **HueSat** data. This must done in `maintain()`. Return `true` if there are new data.
+Parse check for new **HueSat** data. This must done in `maintain()`. Returns `true` if new data.
 ```cpp
 bool parse();
 ```
@@ -1545,7 +1552,7 @@ void callback(cbptr call);
 ``` 
 
 #### active()
-Check if there are valid data. Return `true` if data.
+Check if there are valid data. Return `true` if active data.
 ```cpp
 bool active();
 ```
@@ -1569,11 +1576,13 @@ uint16_t color565();
 **Example**
 ```cpp
 HueSat huesat;
+float hue;
+float sat;
 void data() {
-	if (huesat.active) {
-		float hue = huesat.hue();
-		float sat = huesat.saturation();
-		{
+	if (huesat.active()) {
+		hue = huesat.hue();
+		sat = huesat.saturation();
+		}
 	}
 void setup() {
 	huesat.callback(data); // function pointer to the callback function
@@ -1584,15 +1593,205 @@ void maintain() {
 ```
 
 ## Channel
+This class allows you to get **Channel** data.
 
+### Constructor
+Create a new **Channel** object. This should done before `setup()`
+```cpp
+Channel();
+```
+
+### Methods
+
+#### parse()
+Parse check for new **Channel** data. This must done in `maintain()`. Returns `true` if new data.
+```cpp
+bool parse();
+```
+
+#### callback()
+Optional callback when new data arrived. It also return the cue type.
+```cpp
+void callback(cbptr call);
+```
+
+#### channel()
+Get the complete channel data as a string.
+```cpp
+string channel();
+```
+
+#### selection()
+Get the channel selection as a string.
+```cpp
+string selection();
+```
+
+#### value()
+Get the value as a string.
+```cpp
+string value();
+```
+
+#### type()
+Get the type of the first selected channel as a string.
+```cpp
+string type();
+```
+
+#### address()
+Get the dmx address of the first selected channel as a string.
+```cpp
+string address();
+```
+
+**Example**
+```cpp
+Channel chan;
+string channel;
+void data() { // callback function
+	channel = channel.channel();
+	}
+void setup() {
+	chan.callback(data); // function pointer to the callback function
+	}
+void maintain() {
+	chan.parse();
+	}
+```
 
 
 ## Command
+This class allows you to get **Command** data.
 
+### Constructor
+Create a new **Command** object. This should done before `setup()`
+```cpp
+Command();
+```
+
+### Methods
+
+#### parse()
+Parse check for new **Command** data. This must done in `maintain()`. Returns `true` if new data.
+```cpp
+bool parse();
+```
+
+#### callback()
+Optional callback when new data arrived. It also return the cue type.
+```cpp
+void callback(cbptr call);
+```
+
+#### cammand()
+Return the commend line as a string.
+```cpp
+string command();
+```
+
+**Example**
+```cpp
+Command cmd;
+string cmdline;
+void data() { // callback function
+	cmdline = cmd.command();
+	}
+void setup() {
+	cmd.callback(data); // function pointer to the callback function
+	}
+void maintain() {
+	cmd.parse();
+	}
+```
 
 
 ## Cue
+This class allows you to get **Cue** data.
 
+### Constructor
+Create a new **Cue** object. This should done before `setup()`
+```cpp
+Cue();
+```
+
+### Methods
+
+#### parse()
+Parse check for new **Cue** data. This must done in `maintain()`. Returns the cue type if new data.
+```cpp
+cue_t parse();
+```
+
+#### callback()
+Optional callback when new data arrived. It also return the cue type.
+```cpp
+void callback(cbptrC call);
+```
+
+#### cue()
+Return the complete cue text as a string.
+```cpp
+string cue(cue_t type);
+```
+- **type** cue type PREVIOUS, ACTIVE or PENDING
+
+#### cueList()
+Return the cue list as a string.
+```cpp
+string cueList(cue_t type);
+```
+- **type** cue type PREVIOUS, ACTIVE or PENDING
+
+#### cueNumber()
+Return the cue number as a string.
+```cpp
+string cueNumber(cue_t type);
+```
+- **type** cue type PREVIOUS, ACTIVE or PENDING
+
+#### label()
+Return the cue label as a string.
+```cpp
+string label(cue_t type);
+```
+- **type** cue type PREVIOUS, ACTIVE or PENDING
+
+#### duration()
+Return the duration time as a string.
+```cpp
+string cueList(cue_t type);
+```
+- **type** cue type PREVIOUS, ACTIVE or PENDING
+
+#### progress()
+Return the progress as a string.
+```cpp
+string cueList(cue_t type);
+```
+- **type** cue type PREVIOUS, ACTIVE or PENDING
+
+**Example**
+```cpp
+Cue cue;
+string cuePrevious;
+string cueActive;
+string cuePending;
+void data(cue_t type) { // callback function
+	if (type == PREVIOUS) 
+		cuePrevious = cue.cue(PREVIOUS);
+	else if (type == ACTIVE)
+		cueActive = cue.cue(ACTIVE);
+	else if (type == PENDING) 
+		cuePending = cue.cue(PENDING);
+	}
+void setup() {
+	cue.callback(data); // function pointer to the callback function
+	}
+void maintain() {
+	cue.parse();
+	}
+```
 
 
 ## Version
@@ -1607,15 +1806,21 @@ Version();
 ### Methods
 
 #### version()
-This is an explicit function to tell EOS to send version datas.
+This is an explicit getter function to tell EOS to send version datas.
 ```cpp
 void version();
 ```
 
 #### parse()
-Parse check for new **Version** data. This must done in `maintain()`. Returns `true` if state changed
+Parse check for new **Version** data. This must done in `maintain()`. Returns `true` if new data.
 ```cpp
 bool parse();
+```
+
+#### callback()
+Optional callback when new data arrived.
+```cpp
+void callback(cbptr call);
 ```
 
 #### software()
@@ -1633,9 +1838,11 @@ string library();
 **Example**
 ```cpp
 Version version;
+string software;
+string library;
 void data() { // callback function
-	string software = show.software();
-	string library = show.library();
+	software = show.software();
+	library = show.library();
 	}
 void setup() {
 	version.callback(data); // function pointer to the callback function
@@ -1645,6 +1852,7 @@ void maintain() {
 	version.parse();
 	}
 ```
+
 
 ## User
 This class allows you to get **User** data.
@@ -1658,9 +1866,15 @@ User();
 ### Methods
 
 #### parse()
-Parse check for new **User** data. This must done in `maintain()`. Returns `true` if state changed
+Parse check for new **User** data. This must done in `maintain()`. Returns `true` if new data.
 ```cpp
 bool parse();
+```
+
+#### callback()
+Optional callback when new data arrived.
+```cpp
+void callback(cbptr call);
 ```
 
 #### user()
@@ -1672,8 +1886,9 @@ uint16_t user();
 **Example**
 ```cpp
 User user;
+uint16_t user;
 void data() { // callback function
-	uint16_t user = user.user();
+	user = user.user();
 	}
 void setup() {
 	user.callback(data); // function pointer to the callback function
@@ -1682,6 +1897,7 @@ void maintain() {
 	user.parse();
 	}
 ```
+
 
 ## Show
 This class allows you to get **Show** data.
@@ -1695,9 +1911,15 @@ Show();
 ### Methods
 
 #### parse()
-Parse check for new **Show** data. This must done in `maintain()`. Returns `true` if state changed
+Parse check for new **Show** data. This must done in `maintain()`. Returns `true` if new data.
 ```cpp
 bool parse();
+```
+
+#### callback()
+Optional callback when new data arrived.
+```cpp
+void callback(cbptr call);
 ```
 
 #### name()
@@ -1709,8 +1931,9 @@ string name();
 **Example**
 ```cpp
 Show show;
+string showname;
 void data() { // callback function
-	string showname = show.name();
+	showname = show.name();
 	}
 void setup() {
 	show.callback(data); // function pointer to the callback function
@@ -1719,6 +1942,7 @@ void maintain() {
 	show.parse();
 	}
 ```
+
 
 ## EventState
 This class allows you to get **EventState** data.
@@ -1732,7 +1956,7 @@ EventState();
 ### Methods
 
 #### parse()
-Parse check for new **EventState** data. This must done in `maintain()`. Returns `true` if state changed
+Parse check for new **EventState** data. This must done in `maintain()`. Returns `true` if new data.
 ```cpp
 bool parse();
 ```
@@ -1752,8 +1976,9 @@ string state();
 **Example**
 ```cpp
 EventState eventState;
+string event;
 void data() { // callback function
-	string event = eventstate.state();
+	event = eventstate.state();
 	}
 void setup() {
 	eventstate.callback(data); // function pointer to the callback function
