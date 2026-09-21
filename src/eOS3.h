@@ -426,7 +426,6 @@ class Acceleration {
 		 * @brief Construct a new Accelaration button object
 		 * 
 		 * @param pin acceleration button pin, not needed for virtual devices
-		 * @param mode PUSH or TOGGLE mode
 	 */
 		Acceleration(uint8_t pin);
 		Acceleration();
@@ -828,7 +827,7 @@ class Encoder {
 		 * @param param parameter name as a string
 		 * @param alias optional parameter alias name as a string, used for display a shorted parameter name
 		 */
-		void parameter(string param, string alias = "");
+		void parameter(string param);
 
 		/**
 		 * @brief Get the parameter which is controlled by the encoder
@@ -836,13 +835,6 @@ class Encoder {
 		 * @return String parameter
 		 */
 		string parameter();
-
-		/**
-		 * @brief Get the parameter alias name which is controlled by the encoder
-		 * 
-		 * @return String alias parameter name
-		 */
-		string alias();
 
 		/**
 		 * @brief Parse for the parameter value
@@ -880,7 +872,6 @@ class Encoder {
 	
 	private:
 		string param;
-		string paramAlias;
 		uint8_t pinA;
 		uint8_t pinB;
 		uint8_t lastA;
@@ -1835,7 +1826,7 @@ class SelectCategory {
 		struct Index categoryData[6];
 		struct Wheel {
 			bool active;
-			int wheel;
+			int16_t wheel;
 			float value;
 			string parameter;
 			string alias;
@@ -2036,6 +2027,7 @@ class SelectDynamic {
 		struct Index categoryData[6];
 		struct Wheel {
 			uint8_t category;
+			int16_t wheel;
 			float value;
 			string parameter;
 			};
