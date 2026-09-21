@@ -2027,7 +2027,6 @@ class SelectDynamic {
 		struct Index categoryData[6];
 		struct Wheel {
 			uint8_t category;
-			int16_t wheel;
 			float value;
 			string parameter;
 			};

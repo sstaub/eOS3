@@ -2320,7 +2320,7 @@ bool SelectDynamic::active(uint8_t encoder) {
 uint8_t SelectDynamic::wheel(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return 0;
 	if (encoder <= encoders)
-		return param[idx[encoder - 1]].wheel;
+		return idx[encoder - 1];
 	return 0;
 	}
 
@@ -2419,7 +2419,6 @@ uint8_t SelectDynamic::parse() {
 				}
 			}
 		param[wheel - 1].category = category;
-		param[wheel - 1].wheel = wheel;
 		param[wheel - 1].value = osc.getFloat(3);
 		param[wheel - 1].parameter = parameter;
 		for (uint8_t j = 0; j < encoders; j++) {
