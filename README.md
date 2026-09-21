@@ -63,11 +63,10 @@ Recommanded libraries for your projects
 - I/O Expanders
 	- A/D MCP3208 (SPI) [https://github.com/sstaub/MCP_3208](https://github.com/sstaub/MCP_3208)
 	- I/O MCP23017 (I2C) [https://github.com/sstaub/MCP_23017](https://github.com/sstaub/MCP_23017)
-- Adafruit Seesaw Endcoder and Keys
-  - [https://github.com/sstaub/Seesaw]([https://github.com/sstaub/Seesaw](https://github.com/sstaub/Seesaw))
+- Adafruit Seesaw Endcoder and Keys [https://github.com/sstaub/Seesaw](https://github.com/sstaub/Seesaw)
+
 
 ## IDE's
-
 - VS Code with PlatformIO [https://platformio.org](https://platformio.org) is the a recommanded IDE
 - VS Code with "pioarduino" [https://marketplace.visualstudio.com/items?itemName=pioarduino.pioarduino-ide](https://marketplace.visualstudio.com/items?itemName=pioarduino.pioarduino-ide) extension which allows clang support [https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd](https://marketplace.visualstudio.com/items?itemName=llvm-vs-code-extensions.vscode-clangd)
 - VS Code with "Arduino Maker Workshop" [https://marketplace.visualstudio.com/items?itemName=TheLastOutpostWorkshop.arduino-maker-workshop](https://marketplace.visualstudio.com/items?itemName=TheLastOutpostWorkshop.arduino-maker-workshop) extension
@@ -75,7 +74,6 @@ Recommanded libraries for your projects
 - Arduino IDE 2.x [https://www.arduino.cc/en/software](https://www.arduino.cc/en/software)
 
 ## Boards
-
 **!!! There is no support for AVR (UNO, MEGA) !!!**<br>
 The main development platform is the Raspberry Pi Pico(2) based on the RP2040/RP2350 microcontroller.<br>
 Only boards with native USB are supported, in the moment this is RaspeberryPI Pico(2) and Teensy (3.5 and 4.1),
@@ -99,20 +97,17 @@ It is recommended to use the Earl E. Philhower Core [https://github.com/earlephi
 ## Hardware
 
 ### Adafruit Seesaw
-
 Support for Adafruits Seesaw I2C modules which makes hardware setup very simple.<br>
 - Encoder [https://www.adafruit.com/product/4991](https://www.adafruit.com/product/4991)
 
 - NeoKey 1x4 [https://www.adafruit.com/product/4980](https://www.adafruit.com/product/4980)
 
 ### Buttons and Encoders
-
 Put a 100nF ceramic capacitor between GND and Pins of buttons and encoders (A/B).
 This avoids spikes which can cause a double click.
 Encoder type should EC11xxx from Bourns or ALPS, the are many variants on the market. They have different shaft sizes and types, rotation steps and also with an additional push button. So it is not easy to find the right one.
 
 ### Faders
-
 The faders should a linear type with 10kOhm, from Bourns or ALPS and can be 45/60/80/100mm long. Put a 10nF ceramic capacitor between ground and fader leveler to prevent analog noise.
 
 **Raspberry Pi Pico**
@@ -124,7 +119,6 @@ Use AGND instead the normal GND to the center button pin (2 pins, the outer pin 
 Use ANALOG GND instead of the normal GND to the center button pin (2 pins, the outer pin is normally for the leveler) of the fader (0%)
 
 ## Ethernet Usage
-
 This library and examples are a replacement for the #lighthack project, it allows the use of Ethernet/WLAN additional to USB so the library does not depend on the board type.
 The in the examples used Ethernet library only supports the WIZnet 5500 chip, used on Ethernet Shield 2 or the popular USR-ES1 module.<br>
 There is also a cheap board available directly from **WIZnet**, the W5500-EVB-Pico(2) which combines a Raspberry Pi Pico with a W5500 ethernet chip.
@@ -249,12 +243,10 @@ void setup () {
 TBD
 
 # Documention eOS3 class basics
-
 You must include the header file in the beginning of the sketch.<br>
 `#include "eOS3.h"`
 
 ## begin() USB
-
 Set the USB interface. !Hint! Because of an EOS Bug [EOS-54520] you will not receive all necessary data until you reselect your channels.
 
 ```cpp
@@ -361,7 +353,6 @@ void disconnect() {
 
 
 # eOS3 Helper functions
-
 Small functions to improve workflow.
 
 ## filter()
@@ -401,7 +392,6 @@ eos.filterClear();
 ```
 
 ## subscription()
-
 With subscription you can get special informations about the dedicated parameters.
 
 ```cpp
@@ -419,7 +409,6 @@ eos.subscription("Pan"); // on Pan change EOS will send ```/eos/out/param/Pan=<v
 ```
 
 ## ping()
-
 With a ping you can get a reaction from the console which helps you to identify your box and if is alive. You should send a ping regularly with message to identify your box on the console.
 
 ```cpp
@@ -438,7 +427,6 @@ eos.ping("hello EOS"); // will send a ping with a message
 ```
 
 ## reset()
-
 This function reset the OSC settings
 
 ```cpp
@@ -452,7 +440,6 @@ eos.reset();
 ```
 
 ## command()
-
 Send a string to the existing command line
 
 ```cpp
@@ -466,7 +453,6 @@ eos.command("Chan 5);
 ```
 
 ## newCommand()
-
 Send a string to the command line and clear it before
 
 ```cpp
@@ -480,7 +466,6 @@ eos.newCommand("Chan 5);
 ```
 
 ## user()
-
 This function allows you to change the user ID e.g.
 
 ```cpp
@@ -499,7 +484,6 @@ eos.user(2); // set user 2
 ```
 
 ## initFaders()
-
 Initialise a fader bank, this must done after an established connection, so this method should used inside the `connected()` function.
 
 ```cpp
@@ -521,7 +505,6 @@ void connected() {
 ```
 
 ## initDS()
-
 Initialise a Direct Select bank, this must done after an established connection, so this method should used inside the `connected()` function.
 
 ```cpp
@@ -547,63 +530,47 @@ void connected() {
 # Classes
 
 ## Shift()
-
 This function allows you to assign a hardware button as a **Shift** button. **Shift** set the encoder and wheel messages to the **Fine** mode.
 For the **Intens** parameter it works in opposite and does accelerate the ticks. This should done before `setup()`.
 
 ### Constructor
-
 ```cpp
 Shift(uint8_t pin);
 Shift(); // for virtual devices
 ```
-
 - **pin** number of the pin you want to use for SHIFT, not needed for virtual devices
 
 ### Methods
 
 #### update()
-
 Update must done regulary in `loop()` to check the state of the shift button.
-
 ```cpp
 void update();
 void update(bool state); // for virtual devices
 ```
 
 #### mode()
-
 Mode allows you set the shift button in Toggle mode
-
 ```cpp
 void mode(buttonMode_t modus);
 ```
-
 - **modus** change between PUSH and TOGGLE
 
-
-
 #### tick()
-
 Because Shift does also works as an acceleration button for Intens parameter, tick() allows to change the tick rate.
 
 ```cpp
 void tick(uint8_t tick = 8);
 ```
-
 - **tick** tick rate, default 8 ticks
 
-
 #### state()
-
 Get the current state of the **Shift** button.
-
 ```cpp
 bool state();
 ```
 
 **Example**
-
 ```cpp
 Shift shift(3) // init class and use pin 3 for the SHIFT button
 void setup() {
@@ -615,59 +582,47 @@ void loop() {
   }
 ```
 
-## accelerationButton()
-
+## Acceleration
 This function allows you to assign a hardware button as a **Accelaration** button. **Accelaration** set the encoder and wheel messages to a multiplier mode to accelerate the output.
 
+### Constructor
 ```cpp
-void accelarationButton(uint8_t pin);
+Acceleration(uint8_t pin);
 Acceleration();
 ```
-
 - **pin** number of the pin you want to use for Acceleration, not needed for virtual devices
 
 ### Methods
 
 #### update()
-
 Update must done regulary in `loop()` to check the state of the shift button.
-
 ```cpp
 void update();
 void update(bool state); // for virtual devices
 ```
 
 #### mode()
-
 Mode allows you set the shift button in Toggle mode
-
 ```cpp
 void mode(buttonMode_t modus);
 ```
-
 - **modus** change between PUSH and TOGGLE
 
 #### tick()
-
 Change the tick rate.
 
 ```cpp
 void tick(uint8_t tick = 8);
 ```
-
 - **tick** tick rate, default 8 ticks
 
-
 #### state()
-
 Get the current state of the **Acceleration** button.
-
 ```cpp
 bool state();
 ```
 
 **Example**
-
 ```cpp
 Acceleration acc(4) // init class and use pin 4 for the Acceleration button
 void setup() {
@@ -681,7 +636,6 @@ void loop() {
 
 
 ## Button
-
 With this new universal class you can create generic buttons. In the moment following function types are available:
 - RAW send a raw message (without arguments)
 - KEY send a key press
@@ -698,14 +652,13 @@ With this new universal class you can create generic buttons. In the moment foll
 - SC (show control)
 
 ### Constructor
-
-Create a new OSC button object. This should done before ```setup()```
-
+Create a new **Button** object. This should done before ```setup()```
 ```cpp
 Button(uint8_t pin, button_t type, strng);
 Button(uint8_t pin, button_t type, int number);
+Button(button_t type, strng);
+Button(button_t type, int number);
 ```
-
 - **pin** pin for the button hardware, not needed for virtual devices
 - **type** the function type, RAW, KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, FX, PIXMAP, CURVE, SNAPSHOT, SCENE, SC
 - **strng** for RAW message (without an argument) or KEY name
@@ -715,16 +668,13 @@ Button(uint8_t pin, button_t type, int number);
 ### Methods
 
 #### update()
-
 To get the current button state you must call inside the ```loop()```
-
 ```cpp
 void update();
 void update(bool state); // for virtual devices
 ```
 
 **Example**
-
 ```cpp
 Button next(2, KEY, "Next"); // make a new osc button on Pin 2
 Button last(3, KEY, "Last"); // make a new osc button on Pin 3
@@ -740,80 +690,72 @@ void loop() {
 ```
 
 ## Button2nd, Button3rd
-
 This classes allows up to two additional underlaying **Button** objects. They will controlled by the **Control2nd** and **Control3rd** classes. It works the same way as the **Button** object. It works with **Button** objects but also with all other control buttons exept **Fader** and **Submaster** classes.
 
 ### Constructor
-
-Create a new OSC button object. This should done before ```setup()```
-
+Create a new **Button2nd** or **Button3rd** object. This should done before ```setup()```
 ```cpp
 Button2nd(uint8_t pin, button_t type, strng);
 Button2nd(uint8_t pin, button_t type, int number);
+Button2nd(button_t type, strng);
+Button2nd(button_t type, int number);
+
 Button3rd(uint8_t pin, button_t type, strng);
 Button2rd(uint8_t pin, button_t type, int number);
+Button3rd(button_t type, strng);
+Button3rd(button_t type, int number);
 ```
+- **pin** pin for the button hardware, not needed for virtual devices
+- **type** the function type, RAW, KEY, MACRO, IP, CP, FP, BP, PRESET, CHAN, GROUP, FX, PIXMAP, CURVE, SNAPSHOT, SCENE, SC
+- **strng** for RAW message (without an argument) or KEY name
+- **number** for e.g. MACRO number
 
 ### Methods
 
 #### update()
-
 To get the current button state you must call inside the ```loop()```
-
 ```cpp
 void update();
 void update(bool state); // for virtual devices
 ```
 
 ## Control2nd, Control3rd
-
 This classes allow you to control the underlaying **Button2nd** and **Button3rd** functionality. You can do it with an extra pin but also in conjunction with the **Shift** and **Acceleration** classes and works similar to them.
 So you can use the same pin e.g. for **Shift** and **Control2nd**.
 
 ### Constructor
-
 Create a new OSC button object. This should done before ```setup()```
-
 ```cpp
 Control2nd(uint8_t pin);
 Control2nd();
 Control3rd(uint8_t pin);
 Control3rdd();
 ```
-
 - **pin** pin for the control button hardware, not needed for virtual devices
 
 ### Methods
 
 #### update()
-
 Update must done regulary in `loop()` to check the state of the control button.
-
 ```cpp
 void update();
 void update(bool state); // for virtual devices
 ```
 
 #### mode()
-
 Mode allows you set the control button in Toggle mode
-
 ```cpp
 void mode(buttonMode_t modus);
 ```
-
 - **modus** change between PUSH and TOGGLE
 
 #### state()
-
 Get the current state of the **Acceleration** button.
-
 ```cpp
 bool state();
 ```
 
 **Example**
-
 ```cpp
 Control2nd button2nd(3) // init class and use pin 3 for the control2nd button
 void setup() {
@@ -825,24 +767,19 @@ void loop() {
 ```
 
 ## Encoder
-
-This class allows to construct an encoder object to control parameter values.
+This class allows to construct an **encoder** object to control parameter values.
 
 ### Constructor
-
-The Encoder class creates an encoder object which allows to control parameters,
+The Encoder class creates an **encoder** object which allows to control parameters,
 this should done before the ```setup()```
-
 ```cpp
 Encoder(uint8_t pinA, uint8_t pinB, uint8_t direction = FORWARD);
 Encoder(direction_t direction = FORWARD);
 ```
-
 - **pinA** and **pinB** are the connection Pins for the encoder hardware, not needed for virtual devices
 - **direction** is used for changing the direction of the encoder to clockwise if pinA and pinB are swapped. The directions are FORWARD (default) or REVERSE
 
 **Example**
-
 ```cpp
 Encoder encoder1(A0, A1, REVERSE);
 ```
@@ -850,17 +787,13 @@ Encoder encoder1(A0, A1, REVERSE);
 ### Methods
 
 #### parameter()
-
 Before using the encoder you must assign the parameter you want control. This should done in ```setup()``` or in control functions for parameters.
-
 ```cpp
 void parameter(string param);
 ```
-
 - **param** is the Parameter which you want assign
 
 **Example **
-
 ```cpp
 void setup() {
 	// ...
@@ -870,61 +803,47 @@ void setup() {
 ```
 
 #### parse()
-
 Parse allows you to get parameter data. This can only done when none of the parameter control classes are used.
 If there is an new value, the function return `true`.
 **parse()** must used inside `maintain()`.
-
 ```cpp
 bool parse();
 ```
 
 #### value()
-
 Get the value of a parameter as an float.
-
 ```cpp
 float value();
 ```
 
-
 #### active()
-
 Check if there is an active value for the choosen parameter.
 This allows you to supress the output on displays.
 If there is a value, the function return `true`.
 You must use **parse()** before.
-
 ```cpp
 bool active();
 ```
 
 #### callback()
-
 You can add a callback function, which is triggered when there is a new parameter value inside the **parse()** function.
 This should done in `setup()`.
-
 ```cpp
 void callback(cbptr call);
 ```
 
-
 #### update()
-
 To check the actual encoder state you must call inside the ```loop()```
-
 ```cpp
 void update();
 void update(bool stateA, bool stateB);
 void update(int32_t motion);
 ```
-
 - **stateA** optional for virtual devices
 - **stateA** optional for virtual devices
 - **motion** optional for direct input of the encoder motion, e.g. for Seesaw Encoders
 
 **Example**
-
 ```cpp
 void loop() {
 	// ...
@@ -938,24 +857,19 @@ void loop() {
 
 
 ## SelectParameter
-
 This class allows you to control a parameter list with an Up/Down button to step through. The buttons have a wrap behavior. 
 
 ### Constructor
-
 Create parameter selection object. This should done before ```setup()```
-
 ```cpp
 SelectParameter(uint8_t pinUp, uint8_t pinDown, uint8_t encoders, uint8_t parameters);
 ```
-
 - **pinUp** pin for the button increasing the index
 - **pinDown** pin for the button decreasing the index
 - **encoders** number of the encoders you use in the application
 - **parameters** number of the parameters in the list
 
 **Example**
-
 ```cpp
 SelectParameter selection(6, 7, 2, 9); 
 // create an select parameter object with up button on pin 6, down button on pin 7, 
@@ -964,41 +878,15 @@ SelectParameter selection(6, 7, 2, 9);
 
 ### Methods
 
-#### osc2ndBtnUP() and osc2ndBtnDown()
-
-Add a second layer for an additional OSC button. Use SHIFT + button press.
-
-```cpp
-void osc2ndBtnUp(button_t type, const char strng[]);
-void osc2ndBtnUp(button_t type, int number);
-void osc2ndBtnDown(button_t type, const char strng[]);
-void osc2ndBtnDown(button_t type, int number);
-```
-
-- **type** the function type, RAW, KEY or MACRO
-- **strng** optional RAW message or KEY name
-- **number** optional for MACRO number
-
-**Example**
-
-```cpp
-selection.osc2ndBtnDown(KEY, "Next");
-selection.osc2ndBtnUp(KEY, "Last");
-```
-
 #### parameter()
-
 Set the name of a parameter by index, this must done in ```setup()```
-
 ```cpp
-void parameter(uint8_t index, const char name[]);
+void parameter(uint8_t index, string name);
 ```
-
 - **index** position of the parameter in the list, start with 1
 - **name** name of the parameter, names must EOS parameter names
 
 **Example**
-
 ```cpp
 void setup() {
 	// ...
@@ -1016,17 +904,13 @@ void setup() {
 ```
 
 #### callback()
-
 Add a callback function, the callback is triggered when page is changed by the Up/Down buttons. The callback can used to update the display. This must done in `setup()`
-
 ```cpp
 void callback(cbptr callback);
 ```
-
 - **callback** pointer to the callback function
 
 **Example**
-
 ```cpp
 void setup() {
 	// ...
@@ -1037,16 +921,13 @@ void setup() {
 ```
 
 #### parse()
-
 This function parse the incoming OSC messages if there are parameter value updates. Returns the encoder number to update the value, 0 if there is no visible update<br>
 It must used with receiveOSC() function in ```loop()```
-
 ```cpp
 uint8_t parse();
 ```
 
 **Example**
-
 ```cpp
 void loop() {
 	if (receiveOSC()) {
@@ -1055,65 +936,50 @@ void loop() {
 	}
 ```
 
-#### parameter() return
-
+#### parameter()
 Get the name of a parameter by encoder. This is used when making display updates.
-
 ```cpp
 const char* parameter(uint8_t encoder);
 ```
-
 - **encoder** number of the encoder
 
 #### value()
-
 Returns the value of an encoder. This is used when making display updates. 
-
 ```cpp
 float value(uint8_t encoder);
 ```
-
 - **encoder** number of the encoder
 
 #### pages()
-
 Return the number of all pages. 
-
 ```cpp
 uint8_t pages();
 ```
 
 **Example**
-
 ```cpp
 uint8_t numPages = selection.pages();
 ```
 
 #### page()
-
 Return the actual selected page number. 
-
 ```cpp
 uint8_t page();
 ```
 
 **Example**
-
 ```cpp
 uint8_t currentPage = selection.page();
 ```
 
 
 #### update()
-
 To get the actual state of the page number you must call inside the ```loop()```
-
 ```cpp
 void update();
 ```
 
 **Example**
-
 ```cpp
 void loop() {
 	// ...
@@ -1123,11 +989,9 @@ void loop() {
 ```
 
 ## Submaster
-
 This class allows you to control a submaster with a hardware (slide) potentiometer as a fader and a bump button. See also the hardware advices above.
 
 ### Constructor
-
 Create a new Submaster object. This should done before ```setup()```
 
 ```cpp
@@ -1139,7 +1003,6 @@ Submaster(uint8_t analogPin, uint16_t sub, uint8_t firePin = NO_PIN);
 - **firePin** is the Pin number for an optional bump button.
 
 **Example**
-
 ```cpp
 Submaster submaster1(A1, 1); // leveler is Analog Pin A1, submaster 1 controlled, no bump button
 ```
@@ -1147,15 +1010,12 @@ Submaster submaster1(A1, 1); // leveler is Analog Pin A1, submaster 1 controlled
 ### Methods
 
 #### update()
-
 To get the actual button state you must call inside the ```loop()```
-
 ```CPP
 void update();
 ```
 
 **Example**
-
 ```cpp
 void loop() {
 	// ...
@@ -1165,7 +1025,6 @@ void loop() {
 ```
 
 ## FaderTool
-
 This class allows you configure the faders. It gives you fader page control functions and also parsing for fader informations.
 
 ### Constructor
@@ -1180,7 +1039,6 @@ Before using Faders you must call **initFaders(page, faders, bank);**<br>
 See also the hardware advices above.
 
 ### Initialise Faders
-
 Before you can use the Fader class you must initialize them, this should done in ```setup()```
 
 ```cpp
@@ -1203,7 +1061,6 @@ void setup() {
 ``` 
 
 ### Constructor
-
 Create a new Fader object. This should done before ```setup()```
 
 ```cpp
@@ -1222,17 +1079,13 @@ Fader fader1(A1, 1, 1); // leveler is Analog Pin A1, fader number 1 is controlle
 ### Methods
 
 #### fireButton()
-
 Add a button for an action on the GO button. This must done in ```setup()```
-
 ```cpp
 void fireButton(uint8_t firePin);
 ```
-
 - **firePin** is the Pin number for an additional fire button. Set to 0 if you don't need it.
 
 **Example**
-
 ```
 void setup() {
 	// ...
@@ -1242,17 +1095,14 @@ void setup() {
 ``` 
 
 #### stopButton()
-
 Add a button for an action on the BACK button. This must done in ```setup()```
 
 ```cpp
 void stopButton(uint8_t stopPin);
 ```
-
 - **stopPin** is the Pin number for an additional stop button.
-- 
-**Example**
 
+**Example**
 ```
 void setup() {
 	// ...
@@ -1262,17 +1112,13 @@ void setup() {
 ```
 
 #### loadButton()
-
 Add a button for an action on the LOAD button. This must done in ```setup()```
-
 ```cpp
 void loadButton(uint8_t loadPin);
 ```
-
 - **loadPin** is the Pin number for an additional load button.
 
 **Example**
-
 ```
 void setup() {
 	// ...
@@ -1283,14 +1129,11 @@ void setup() {
 
 
 #### update()
-
 To get the actual button state you must call inside the ```loop()```
-
 ```
 void update();
 ```
 **Example**
-
 ```cpp
 void loop() {
 	// ...
@@ -1300,7 +1143,6 @@ void loop() {
 ```
 
 ### value()
-
 Return the value (0...100%) of the fader.
 
 ```cpp
@@ -1313,7 +1155,6 @@ uint8_t value = fader1.value();
 ```
 
 ### fetch()
-
 Lock the sending of OSC fader data until the value defined in fetch() is reached.<br>
 This functionality is intended for page changing. So you need to fetch the fader before you can use it.
 
@@ -1329,33 +1170,26 @@ fader201.fetch(0); // set fetch value to 0
 ```
 
 ### lock()
-
 Get or set the state of the fetch function, can used for indication of the fader state or force a new state.
-
 ```cpp
 bool lock();
 void lock(bool state);
 ```
-
 - ```true``` locked fader
 - ```false``` unlocked fader
 
 **Example**
-
 ```cpp
 bool state = fader1.lock(); // get the lock state
 fader1.lock(false); // set the lock state
 ```
 
 ### jitter()
-
 This functionality is a helper function for fetching.<br> 
 e.g. if ```fetch(20)``` and ```jitter(2)``` the unlock value expand to a range from ```18 ... 22```
-
 ```cpp
 void jitter(uint8_t delta);
 ```
-
 - **delta** +/- value range
 
 Example
