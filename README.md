@@ -164,16 +164,6 @@ There are 3 interface available
 - UDP
 - TCP Slip over port 3037 (default)
 
-## USB configuration and initialization
-For USB connection add the simple interface function `init()` in ```setup()```
-
-```cpp
-#include "eOS3.h"
-eOS3 eos;
-void setup() {
-  eos.begin();
-  }
-```
 
 ## Ethernet configuration and initialization
 The Ethernet functionality is independent from the hardware port (e.g. WIFI or other Ethernet hardware than WizNet W5500) and libraries. Behind the scenes it uses the virtual Arduino UDP/Client classes.
@@ -319,6 +309,7 @@ void update();
 eOS3 eos;
 
 void setup() {
+  eos.begin();
   // ...
   }
 
@@ -679,14 +670,14 @@ void update(bool state); // for virtual devices
 Button next(2, KEY, "Next"); // make a new osc button on Pin 2
 Button last(3, KEY, "Last"); // make a new osc button on Pin 3
 void setup() {
-	// ...
-	}
+  // ...
+  }
 void loop() {
-	// ...
-	next.update();
-	last.update();
-	// ...
-	}
+  // ...
+  next.update();
+  last.update();
+  // ...
+  }
 ```
 
 ## Button2nd, Button3rd
@@ -767,10 +758,10 @@ void loop() {
 ```
 
 ## Encoder
-This class allows to construct an **encoder** object to control parameter values.
+This class allows to construct an **encoder** objects to control parameter values.
 
 ### Constructor
-The Encoder class creates an **encoder** object which allows to control parameters,
+Creates an **encoder** object,
 this should done before the ```setup()```
 ```cpp
 Encoder(uint8_t pinA, uint8_t pinB, uint8_t direction = FORWARD);
@@ -778,11 +769,6 @@ Encoder(direction_t direction = FORWARD);
 ```
 - **pinA** and **pinB** are the connection Pins for the encoder hardware, not needed for virtual devices
 - **direction** is used for changing the direction of the encoder to clockwise if pinA and pinB are swapped. The directions are FORWARD (default) or REVERSE
-
-**Example**
-```cpp
-Encoder encoder1(A0, A1, REVERSE);
-```
 
 ### Methods
 
@@ -792,15 +778,6 @@ Before using the encoder you must assign the parameter you want control. This sh
 void parameter(string param);
 ```
 - **param** is the Parameter which you want assign
-
-**Example **
-```cpp
-void setup() {
-	// ...
-	encoder1.parameter("Pan");
-	// ...
-	}
-```
 
 #### parse()
 Parse allows you to get parameter data. This can only done when none of the parameter control classes are used.
@@ -845,11 +822,17 @@ void update(int32_t motion);
 
 **Example**
 ```cpp
+Encoder encoder1(A0, A1, REVERSE);
+void setup() {
+  // ...
+  encoder1.parameter("Pan");
+  // ...
+  }
 void loop() {
-	// ...
-	encoder1.update();
-	// ...
-	}
+  // ...
+  encoder1.update();
+  // ...
+  }
 ```
 
 ## Wheel
@@ -889,18 +872,18 @@ void parameter(uint8_t index, string name);
 **Example**
 ```cpp
 void setup() {
-	// ...
-	selection.parameter(1, "Intens");
-	selection.parameter(2, "Iris");
-	selection.parameter(3, "Edge");
-	selection.parameter(4, "Zoom");
-	selection.parameter(5, "Pan");
-	selection.parameter(6, "Tilt");
-	selection.parameter(7, "Red");
-	selection.parameter(8, "Blue");
-	selection.parameter(9, "Green");
-	// ...
-	}
+// ...
+  selection.parameter(1, "Intens");
+  selection.parameter(2, "Iris");
+  selection.parameter(3, "Edge");
+  selection.parameter(4, "Zoom");
+  selection.parameter(5, "Pan");
+  selection.parameter(6, "Tilt");
+  selection.parameter(7, "Red");
+  selection.parameter(8, "Blue");
+  selection.parameter(9, "Green");
+  // ...
+  }
 ```
 
 #### callback()
@@ -913,11 +896,11 @@ void callback(cbptr callback);
 **Example**
 ```cpp
 void setup() {
-	// ...
-	selection.callback(updateEncoder);
-	// the function updateEncoder() will called on page change.
-	// ...
-	}
+  // ...
+  selection.callback(updateEncoder);
+  // the function updateEncoder() will called on page change.
+  // ...
+  }
 ```
 
 #### parse()
@@ -925,15 +908,6 @@ This function parse the incoming OSC messages if there are parameter value updat
 It must used with receiveOSC() function in ```loop()```
 ```cpp
 uint8_t parse();
-```
-
-**Example**
-```cpp
-void loop() {
-	if (receiveOSC()) {
-		if (selection.parse()) updateDisplay(); // does a display update 
-		}
-	}
 ```
 
 #### parameter()
@@ -1002,11 +976,6 @@ Submaster(uint8_t analogPin, uint16_t sub, uint8_t firePin = NO_PIN);
 - **sub** is the submaster number you want to control
 - **firePin** is the Pin number for an optional bump button.
 
-**Example**
-```cpp
-Submaster submaster1(A1, 1); // leveler is Analog Pin A1, submaster 1 controlled, no bump button
-```
-
 ### Methods
 
 #### update()
@@ -1017,11 +986,12 @@ void update();
 
 **Example**
 ```cpp
+Submaster submaster1(A1, 1); // leveler is Analog Pin A1, submaster 1 controlled, no bump button
 void loop() {
-	// ...
-	submaster1.update();
-	// ...
-	}
+  // ...
+  submaster1.update();
+  // ...
+  }
 ```
 
 ## FaderTool
@@ -1235,14 +1205,14 @@ string label(uint8_t sk);
 ```cpp
 softkey softkey;
 void sk(uint8_t sk) { // callback function
-	string label = softkey.label(sk);
-	}
+  string label = softkey.label(sk);
+  }
 void setup() {
-	softkey.callback(sk); // function pointer to the callback function
-	}
+  softkey.callback(sk); // function pointer to the callback function
+  }
 void maintain() {
-	softkey.parse();
-	}
+  softkey.parse();
+  }
 ```
 
 ## PanTilt
@@ -1291,17 +1261,17 @@ PanTilt pantilt;
 float pan;
 float tilt;
 void data() {
-	if (pantilt.active()) {
-		pan = pantilt.pan();
-		tilt = pantilt.tilt();
-		}
+  if (pantilt.active()) {
+	pan = pantilt.pan();
+	tilt = pantilt.tilt();
 	}
+  }
 void setup() {
-	pantilt.callback(data); // function pointer to the callback function
-	}
+  pantilt.callback(data); // function pointer to the callback function
+  }
 void maintain() {
-	pantilt.parse();
-	}
+  pantilt.parse();
+  }
 ```
 
 ## XYZ
@@ -1348,18 +1318,18 @@ float x;
 float y;
 float z;
 void data() {
-	if (xyz.active()) {
-		x = xyz.x();
-		y = xyz.x();
-		z = xyz.x();
-		}
+  if (xyz.active()) {
+	x = xyz.x();
+	y = xyz.x();
+	z = xyz.x();
 	}
+  }
 void setup() {
-	xyz.callback(data); // function pointer to the callback function
-	}
+  xyz.callback(data); // function pointer to the callback function
+  }
 void maintain() {
-	xyz.parse();
-	}
+  xyz.parse();
+  }
 ```
 
 ## HueSat
@@ -1413,17 +1383,17 @@ HueSat huesat;
 float hue;
 float sat;
 void data() {
-	if (huesat.active()) {
-		hue = huesat.hue();
-		sat = huesat.saturation();
-		}
+  if (huesat.active()) {
+	hue = huesat.hue();
+	sat = huesat.saturation();
 	}
+  }
 void setup() {
-	huesat.callback(data); // function pointer to the callback function
-	}
+  huesat.callback(data); // function pointer to the callback function
+  }
 void maintain() {
-	huesat.parse();
-	}
+  huesat.parse();
+  }
 ```
 
 ## Channel
@@ -1484,14 +1454,14 @@ string address();
 Channel chan;
 string channel;
 void data() { // callback function
-	channel = channel.channel();
-	}
+  channel = channel.channel();
+  }
 void setup() {
-	chan.callback(data); // function pointer to the callback function
-	}
+  chan.callback(data); // function pointer to the callback function
+  }
 void maintain() {
-	chan.parse();
-	}
+  chan.parse();
+  }
 ```
 
 
@@ -1529,14 +1499,14 @@ string command();
 Command cmd;
 string cmdline;
 void data() { // callback function
-	cmdline = cmd.command();
-	}
+  cmdline = cmd.command();
+  }
 void setup() {
-	cmd.callback(data); // function pointer to the callback function
-	}
+  cmd.callback(data); // function pointer to the callback function
+  }
 void maintain() {
-	cmd.parse();
-	}
+  cmd.parse();
+  }
 ```
 
 
@@ -1612,19 +1582,19 @@ string cuePrevious;
 string cueActive;
 string cuePending;
 void data(cue_t type) { // callback function
-	if (type == PREVIOUS) 
-		cuePrevious = cue.cue(PREVIOUS);
-	else if (type == ACTIVE)
-		cueActive = cue.cue(ACTIVE);
-	else if (type == PENDING) 
-		cuePending = cue.cue(PENDING);
-	}
+  if (type == PREVIOUS) 
+	cuePrevious = cue.cue(PREVIOUS);
+  else if (type == ACTIVE)
+	cueActive = cue.cue(ACTIVE);
+  else if (type == PENDING) 
+	cuePending = cue.cue(PENDING);
+  }
 void setup() {
-	cue.callback(data); // function pointer to the callback function
-	}
+  cue.callback(data); // function pointer to the callback function
+  }
 void maintain() {
-	cue.parse();
-	}
+  cue.parse();
+  }
 ```
 
 
@@ -1675,16 +1645,16 @@ Version version;
 string software;
 string library;
 void data() { // callback function
-	software = show.software();
-	library = show.library();
-	}
+  software = show.software();
+  library = show.library();
+  }
 void setup() {
-	version.callback(data); // function pointer to the callback function
-	version.version(); //getter for version
-	}
+  version.callback(data); // function pointer to the callback function
+  version.version(); //getter for version
+  }
 void maintain() {
-	version.parse();
-	}
+  version.parse();
+  }
 ```
 
 
@@ -1722,14 +1692,14 @@ uint16_t user();
 User user;
 uint16_t user;
 void data() { // callback function
-	user = user.user();
-	}
+  user = user.user();
+  }
 void setup() {
-	user.callback(data); // function pointer to the callback function
-	}
+  user.callback(data); // function pointer to the callback function
+  }
 void maintain() {
-	user.parse();
-	}
+  user.parse();
+  }
 ```
 
 
@@ -1767,14 +1737,14 @@ string name();
 Show show;
 string showname;
 void data() { // callback function
-	showname = show.name();
-	}
+  showname = show.name();
+  }
 void setup() {
-	show.callback(data); // function pointer to the callback function
-	}
+  show.callback(data); // function pointer to the callback function
+  }
 void maintain() {
-	show.parse();
-	}
+  show.parse();
+  }
 ```
 
 
@@ -1812,12 +1782,12 @@ string state();
 EventState eventState;
 string event;
 void data() { // callback function
-	event = eventstate.state();
-	}
+  event = eventstate.state();
+  }
 void setup() {
-	eventstate.callback(data); // function pointer to the callback function
-	}
+  eventstate.callback(data); // function pointer to the callback function
+  }
 void maintain() {
-	eventstate.parse();
-	}
+  eventstate.parse();
+  }
 ```
