@@ -1075,11 +1075,42 @@ This class allows you configure the faders. It gives you fader page control func
 ### Constructor
 Create a FaderTool object. This should done before `setup()`
 ```cpp
+FaderTool(uint8_t pinUp, uint8_t pinDown);
+FaderTool();
+```
+- **pinUp** pin for the button increasing the page, not need for virtual devices.
+- **pinDown** pin for the button decreasing the page, not need for virtual devices.
 
+### Methods
+
+#### init()
+Initialzise the fader configuration similar to initFaders().
+```cpp
+void init(uint8_t faders = 10, uint8_t index = 1);
+```
+- **fader** number of faders, default 10
+- **index** the fader index(bank), default 1
+
+#### parse()
+Parse for fader data, return the number of the current parsed fader. This should done in `maintain()`
+```cpp
+int8_t parse();
 ```
 
+#### callbackPage(), callbackName(), callbackRange(), callbackValue()
+There are several callback functions for different types of fader data, which includes page or fader number. This should done in `setup()`
+```cpp
+void callbackPage(cbptr2 call);
+void callbackName(cbptr2 call);
+void callbackRange(cbptr2 call);
+void callbackValue(cbptr2 call);
+```
+- **call** function(uint8_t)
+
+
+
 # Parameter handling classes
-There are 3 ways to handle parameters.
+There are 3 ways to handle parameters. You can find esxamples in the **/examples** folder.
 - **SelectParameter** allows you to make a simple parameter list, with an Up/Down button to step through the list.
 - **SelectCategory** allows you to make a parameter list organized in categories. It use 6 buttons for each parameter category.
 - **SelectDyn** works dynamic where only parameters are available depending from the channel selection. It use also 6 buttons for each parameter category.
