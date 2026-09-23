@@ -474,27 +474,6 @@ void user(int16_t userID);
 eos.user(2); // set user 2
 ```
 
-## initFaders()
-Initialise a fader bank, this must done after an established connection, so this method should used inside the `connected()` function.
-
-```cpp
-void initFaders(uint8_t faders = 10, uint8_t index = 1, uint8_t page = 1);
-```
-
-- **faders** number of faders to init, default 10
-- **init** index (bank) number, default 1
-- **page** fader page, default 1
-
-###**Example**
-
-```cpp
-void connected() {
-  // ...
-  eos.initFaders(5); // init 5 faders
-  // ...
-  }
-```
-
 ## initDS()
 Initialise a Direct Select bank, this must done after an established connection, so this method should used inside the `connected()` function.
 
@@ -1022,7 +1001,7 @@ Update the fire button, must inside `loop()`
 void updateFire();
 void updateFire(bool fireState);
 ```
-- **fireStae** state of the fire button, optional for virtual devices
+- **fireState** state of the fire button, optional for virtual devices
 
 ###**Example**
 ```cpp
@@ -1040,57 +1019,33 @@ void loop() {
   }
 ```
 
-## FaderTool
-This class allows you configure the faders. It gives you fader page control functions and also parsing for fader informations.
-
-### Constructor
-
-
-
 
 ## Fader
 
 This class allows you to control a fader containing optional Fire/Stop/Load control buttons, all  functions configured in EOS Tab 36, with a hardware (slide) potentiometer as a fader and buttons.<br>
-Before using Faders you must call **initFaders(page, faders, bank);**<br>
+Before using Faders you must call **initFaders(faders, index, page)**<br>
 See also the hardware advices above.
 
-### Initialise Faders
-Before you can use the Fader class you must initialize them, this should done in `setup()`
+## initFaders(), part of the eOS3 helper class
+Initialise a fader bank, this must done after an established connection, so this method should used inside the `connected()` function.
 
 ```cpp
-void initFaders(uint8_t page = 1, uint8_t faders = 10, uint8_t bank = 1);
+void initFaders(uint8_t faders = 10, uint8_t index = 1, uint8_t page = 1);
 ```
-
-The **initFaders()** function is basic configuration and must use before you can use your Fader objects.
-- **page** the fader page on your console
-- **fader** is the number of fader on you console page
-- **bank** is the virtuell OSC fader bank
-
-###**Example**
-
-```
-void setup() {
-	// ...
-	initFaders(); // without a parameter gives you a configuration for use your faders on page 1 of your console
-	//...
-	}
-``` 
+- **faders** number of faders to init, default 10
+- **init** index (bank) number, default 1
+- **page** fader page, default 1
 
 ### Constructor
 Create a new Fader object. This should done before `setup()`
 
 ```cpp
-Fader(uint8_t analogPin, uint8_t fader, uint8_t bank);
+Fader(uint8_t analogPin, uint8_t fader, uint8_t index = 1);
+Fader(uint8_t fader, uint8_t index = 1);
 ```
-- **analogPin** are the connection Analog Pin for the fader leveler
+- **analogPin** are the connection Analog Pin for the fader leveler, not needed for vitual devices
 - **fader** is the fader number of the fader page you want to control
-- **bank** is the internal OSC bank number
-
-###**Example**
-
-```cpp
-Fader fader1(A1, 1, 1); // leveler is Analog Pin A1, fader number 1 is controlled, bank number is 1
-```
+- **index** is the internal OSC index(bank) number
 
 ### Methods
 
@@ -1098,76 +1053,37 @@ Fader fader1(A1, 1, 1); // leveler is Analog Pin A1, fader number 1 is controlle
 Add a button for an action on the GO button. This must done in `setup()`
 ```cpp
 void fireButton(uint8_t firePin);
+void fireButton();
 ```
-- **firePin** is the Pin number for an additional fire button. Set to 0 if you don't need it.
-
-###**Example**
-```
-void setup() {
-	// ...
-	fader1.fireButton(2); // add a fire button on pin 2 
-	//...
-	}
-``` 
+- **firePin** pin number for an additional fire button, not needed for virtual devices
 
 #### stopButton()
-Add a button for an action on the BACK button. This must done in `setup()`
-
+Add a button for an action on the STOP/BACK button. This must done in `setup()`
 ```cpp
 void stopButton(uint8_t stopPin);
+void stopButton();
 ```
-- **stopPin** is the Pin number for an additional stop button.
+- **stopPin** pin number for an additional stop button, not needed for virtual devices
 
-###**Example**
-```
-void setup() {
-	// ...
-	fader1.stopButton(3); // add a fire button on pin 3
-	//...
-	}
-```
 
 #### loadButton()
 Add a button for an action on the LOAD button. This must done in `setup()`
 ```cpp
 void loadButton(uint8_t loadPin);
+void loadButton();
 ```
-- **loadPin** is the Pin number for an additional load button.
+- **loadPin** pin number for an additional load button, not needed for virtual devices
 
-###**Example**
-```
-void setup() {
-	// ...
-	fader1.loadButton(4); // add a fire button on pin 4 
-	//...
-	}
+#### callback()
+Optional callback when value changed.
+```cpp
+void callback(cbptr call);
 ``` 
 
-
-#### update()
-To get the actual button state you must call inside the `loop()`
-```
-void update();
-```
-###**Example**
-```cpp
-void loop() {
-	// ...
-	fader1.update();
-	// ...
-	}
-```
-
-### value()
-Return the value (0...100%) of the fader.
-
+#### value()
+Get the current value from 0...100
 ```cpp
 uint8_t value();
-```
-
-###**Example**
-```cpp
-uint8_t value = fader1.value();
 ```
 
 ### fetch()
@@ -1177,10 +1093,9 @@ This functionality is intended for page changing. So you need to fetch the fader
 ```cpp
 void fetch(uint8_t value);
 ```
-
 - **value*** unlock value
 
-###**Example**
+**Example**
 ```cpp
 fader201.fetch(0); // set fetch value to 0
 ```
@@ -1194,7 +1109,7 @@ void lock(bool state);
 - ```true``` locked fader
 - ```false``` unlocked fader
 
-###**Example**
+**Example**
 ```cpp
 bool state = fader1.lock(); // get the lock state
 fader1.lock(false); // set the lock state
@@ -1208,10 +1123,81 @@ void jitter(uint8_t delta);
 ```
 - **delta** +/- value range
 
-Example
+**Example**
 ```cpp
 fader1.jitter(2); // set fetch range to +/- 2
 ```
+
+#### updateAnalog()
+Update the analog input, must inside `loop()`
+```CPP
+void update();
+```
+
+#### updateAnalog()
+Update the input for virtual devices, must inside `loop()`
+```CPP
+void updateAnalog(int analog);
+```
+- **analog** analog value 10bit
+
+#### updateValue()
+Update the input for virtual devices, must inside `loop()`
+```CPP
+void updateValue(uint8_t value);
+```
+- **analog** analog value 0...100
+
+#### updateFire()
+Update the fire button, must inside `loop()`
+```CPP
+void updateFire();
+void updateFire(bool fireState);
+```
+- **fireState** state of the fire button, optional for virtual devices
+
+#### updateStop()
+Update the fire button, must inside `loop()`
+```CPP
+void updateStop();
+void updateStop(bool fireState);
+```
+- **stopState** state of the stop button, optional for virtual devices
+
+#### updateLoad()
+Update the load button, must inside `loop()`
+```CPP
+void updateLoad();
+void updateLoad(bool fireState);
+```
+- **loadState** state of the load button, optional for virtual devices
+
+###**Example**
+```cpp
+Fader fader1(A1, 1, 1); // leveler is Analog Pin A1, fader number 1 is controlled, bank number is 1
+void setup() {
+  fader1.fireButton(2); // add a fire button on pin 2
+  fader1.stopButton(3); // add a fire button on pin 3
+  }
+void loop() {
+  fader1.update();
+  fader1.updateFire();
+  fader1.updateStop();
+  }
+void connected() {
+  // ...
+  eos.initFaders(5); // init 5 faders
+  // ...
+  }
+```
+
+## FaderTool
+This class allows you configure the faders. It gives you fader page control functions and also parsing for fader informations.
+
+### Constructor
+
+
+
 
 
 # Special parser classes
