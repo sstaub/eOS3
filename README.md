@@ -1070,8 +1070,16 @@ void connected() {
 This class allows you configure the faders. It gives you fader page control functions and also parsing for fader informations.
 
 ### Constructor
+Create a FaderTool object. This should done before `setup()`
+```cpp
 
+```
 
+# Parameter handling classes
+There are 3 ways to handle parameters.
+- **SelectParameter** allows you to make a simple parameter list, with an Up/Down button to step through the list.
+- **SelectCategory** allows you to make a parameter list organized in categories. It use 6 buttons for each parameter category.
+- **SelectDyn** works dynamic where only parameters are available depending from the channel selection. It use also 6 buttons for each parameter category.
 
 ## SelectParameter
 This class allows you to control a parameter list with an Up/Down button to step through. The buttons have a wrap behavior. 
