@@ -816,130 +816,8 @@ void loop() {
 
 ## Wheel
 
+## Direct Select
 
-
-## SelectParameter
-This class allows you to control a parameter list with an Up/Down button to step through. The buttons have a wrap behavior. 
-
-### Constructor
-Create parameter selection object. This should done before `setup()`
-```cpp
-SelectParameter(uint8_t pinUp, uint8_t pinDown, uint8_t encoders, uint8_t parameters);
-```
-- **pinUp** pin for the button increasing the index
-- **pinDown** pin for the button decreasing the index
-- **encoders** number of the encoders you use in the application
-- **parameters** number of the parameters in the list
-
-###**Example**
-```cpp
-SelectParameter selection(6, 7, 2, 9); 
-// create an select parameter object with up button on pin 6, down button on pin 7, 
-// using two encoders and a parameter list with 9 items
-```
-
-### Methods
-
-#### parameter()
-Set the name of a parameter by index, this must done in `setup()`
-```cpp
-void parameter(uint8_t index, string name);
-```
-- **index** position of the parameter in the list, start with 1
-- **name** name of the parameter, names must EOS parameter names
-
-###**Example**
-```cpp
-void setup() {
-// ...
-  selection.parameter(1, "Intens");
-  selection.parameter(2, "Iris");
-  selection.parameter(3, "Edge");
-  selection.parameter(4, "Zoom");
-  selection.parameter(5, "Pan");
-  selection.parameter(6, "Tilt");
-  selection.parameter(7, "Red");
-  selection.parameter(8, "Blue");
-  selection.parameter(9, "Green");
-  // ...
-  }
-```
-
-#### callback()
-Add a callback function, the callback is triggered when page is changed by the Up/Down buttons. The callback can used to update the display. This must done in `setup()`
-```cpp
-void callback(cbptr callback);
-```
-- **callback** pointer to the callback function
-
-###**Example**
-```cpp
-void setup() {
-  // ...
-  selection.callback(updateEncoder);
-  // the function updateEncoder() will called on page change.
-  // ...
-  }
-```
-
-#### parse()
-This function parse the incoming OSC messages if there are parameter value updates. Returns the encoder number to update the value, 0 if there is no visible update<br>
-It must used with receiveOSC() function in `loop()`
-```cpp
-uint8_t parse();
-```
-
-#### parameter()
-Get the name of a parameter by encoder. This is used when making display updates.
-```cpp
-const char* parameter(uint8_t encoder);
-```
-- **encoder** number of the encoder
-
-#### value()
-Returns the value of an encoder. This is used when making display updates. 
-```cpp
-float value(uint8_t encoder);
-```
-- **encoder** number of the encoder
-
-#### pages()
-Return the number of all pages. 
-```cpp
-uint8_t pages();
-```
-
-###**Example**
-```cpp
-uint8_t numPages = selection.pages();
-```
-
-#### page()
-Return the actual selected page number. 
-```cpp
-uint8_t page();
-```
-
-###**Example**
-```cpp
-uint8_t currentPage = selection.page();
-```
-
-
-#### update()
-To get the actual state of the page number you must call inside the `loop()`
-```cpp
-void update();
-```
-
-###**Example**
-```cpp
-void loop() {
-	// ...
-	selection.update();
-	// ...
-	}
-```
 
 ## Submaster
 This class allows you to control a submaster with a hardware (slider) potentiometer as a fader and a bump button. See also the hardware advices above.
@@ -1019,9 +897,7 @@ void loop() {
   }
 ```
 
-
 ## Fader
-
 This class allows you to control a fader containing optional Fire/Stop/Load control buttons, all  functions configured in EOS Tab 36, with a hardware (slide) potentiometer as a fader and buttons.<br>
 Before using Faders you must call **initFaders(faders, index, page)**<br>
 See also the hardware advices above.
@@ -1064,7 +940,6 @@ void stopButton(uint8_t stopPin);
 void stopButton();
 ```
 - **stopPin** pin number for an additional stop button, not needed for virtual devices
-
 
 #### loadButton()
 Add a button for an action on the LOAD button. This must done in `setup()`
@@ -1180,7 +1055,7 @@ void setup() {
   fader1.stopButton(3); // add a fire button on pin 3
   }
 void loop() {
-  fader1.update();
+  fader1.updateAnalog();
   fader1.updateFire();
   fader1.updateStop();
   }
@@ -1198,6 +1073,127 @@ This class allows you configure the faders. It gives you fader page control func
 
 
 
+## SelectParameter
+This class allows you to control a parameter list with an Up/Down button to step through. The buttons have a wrap behavior. 
+
+### Constructor
+Create parameter selection object. This should done before `setup()`
+```cpp
+SelectParameter(uint8_t pinUp, uint8_t pinDown, uint8_t encoders, uint8_t parameters);
+```
+- **pinUp** pin for the button increasing the index
+- **pinDown** pin for the button decreasing the index
+- **encoders** number of the encoders you use in the application
+- **parameters** number of the parameters in the list
+
+###**Example**
+```cpp
+SelectParameter selection(6, 7, 2, 9); 
+// create an select parameter object with up button on pin 6, down button on pin 7, 
+// using two encoders and a parameter list with 9 items
+```
+
+### Methods
+
+#### parameter()
+Set the name of a parameter by index, this must done in `setup()`
+```cpp
+void parameter(uint8_t index, string name);
+```
+- **index** position of the parameter in the list, start with 1
+- **name** name of the parameter, names must EOS parameter names
+
+###**Example**
+```cpp
+void setup() {
+// ...
+  selection.parameter(1, "Intens");
+  selection.parameter(2, "Iris");
+  selection.parameter(3, "Edge");
+  selection.parameter(4, "Zoom");
+  selection.parameter(5, "Pan");
+  selection.parameter(6, "Tilt");
+  selection.parameter(7, "Red");
+  selection.parameter(8, "Blue");
+  selection.parameter(9, "Green");
+  // ...
+  }
+```
+
+#### callback()
+Add a callback function, the callback is triggered when page is changed by the Up/Down buttons. The callback can used to update the display. This must done in `setup()`
+```cpp
+void callback(cbptr callback);
+```
+- **callback** pointer to the callback function
+
+###**Example**
+```cpp
+void setup() {
+  // ...
+  selection.callback(updateEncoder);
+  // the function updateEncoder() will called on page change.
+  // ...
+  }
+```
+
+#### parse()
+This function parse the incoming OSC messages if there are parameter value updates. Returns the encoder number to update the value, 0 if there is no visible update<br>
+It must used with receiveOSC() function in `loop()`
+```cpp
+uint8_t parse();
+```
+
+#### parameter()
+Get the name of a parameter by encoder. This is used when making display updates.
+```cpp
+const char* parameter(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### value()
+Returns the value of an encoder. This is used when making display updates. 
+```cpp
+float value(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### pages()
+Return the number of all pages. 
+```cpp
+uint8_t pages();
+```
+
+###**Example**
+```cpp
+uint8_t numPages = selection.pages();
+```
+
+#### page()
+Return the actual selected page number. 
+```cpp
+uint8_t page();
+```
+
+###**Example**
+```cpp
+uint8_t currentPage = selection.page();
+```
+
+#### update()
+To get the actual state of the page number you must call inside the `loop()`
+```cpp
+void update();
+```
+
+###**Example**
+```cpp
+void loop() {
+	// ...
+	selection.update();
+	// ...
+	}
+```
 
 
 # Special parser classes
