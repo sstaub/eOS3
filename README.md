@@ -820,7 +820,18 @@ void loop() {
 
 ## Wheel
 
+
+
+
 ## Direct Select
+
+
+
+
+## DSTool
+
+
+
 
 
 ## Submaster
@@ -1166,7 +1177,7 @@ void loop() {
   }
 void maintain() {
   uint8_t fader = fadertool.parse()
-  // here you can all the data, or do it with callbacks
+  // here you can proceed all the data, or do it with callbacks
   }
 ```
 
