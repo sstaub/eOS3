@@ -17,8 +17,8 @@ The library support hardware elements like encoders, fader, buttons with some he
 Please refer to the EOS manual for more information about OSC.<br>
 If you have wishes for other functions or classes use the discussion tab. If you find bugs make an issue, nobody is perfect. For questions use the discussion page.
 
-![](../images/Box1-3.jpg)
-![](../images/Box4-5.jpg)
+![]([../images/Box1-3.jpg](https://github.com/sstaub/eOS3/blob/main/images/BOX1-3.jpg))
+![]([../images/Box4-5.jpg](https://github.com/sstaub/eOS3/blob/main/images/BOX4-5.jpg))
 
 ## eOS3
 The new main class is `eOS3`.
