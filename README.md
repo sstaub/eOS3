@@ -714,6 +714,7 @@ Update must done regulary in `loop()` to check the state of the control button.
 void update();
 void update(bool state); // for virtual devices
 ```
+- **state** button state for virtual devices
 
 #### mode()
 Mode allows you set the control button in Toggle mode
@@ -1105,8 +1106,69 @@ void callbackName(cbptr2 call);
 void callbackRange(cbptr2 call);
 void callbackValue(cbptr2 call);
 ```
-- **call** function(uint8_t)
+- **call** pointer to function(uint8_t)
 
+#### page()
+Returns the current page number.
+```cpp
+uint8_t page();
+```
+
+#### value()
+Returns the value of a given fader.
+```cpp
+uint8_t value(uint8_t fader);
+```
+- **fader** number of the fader 1...x
+
+#### label()
+Returns the label of a given fader.
+```cpp
+fader_t type(uint8_t fader);
+```
+- **fader** number of the fader 1...x
+
+#### typeString()
+Returns the type of a given fader as a string.
+```cpp
+string typeString(uint8_t fader);
+```
+- **fader** number of the fader 1...x
+
+#### rangeMin()
+Returns the range minimum of a given fader.
+```cpp
+uint16_t rangeMin(uint8_t fader);
+```
+- **fader** number of the fader 1...x
+
+#### rangeMax()
+Returns the range maximum of a given fader.
+```cpp
+uint16_t rangeMax(uint8_t fader);
+```
+- **fader** number of the fader 1...x
+
+#### update()
+Updates the button states, this must done in `loop()`
+```cpp
+void update();
+void update(bool stateUp, bool stateDown);
+```
+- **stateUp** button up state for virtual devices
+- **stateDown** button down state for virtual devices
+
+###**Example**
+```cpp
+FaderTool fadertool(0, 1); // use pin 0 and 1 for up/down buttons
+void loop() {
+  fadertool.update();
+  }
+void maintain() {
+  uint8_t fader = fadertool.parse()
+  // here you can all the data, or do it with callbacks
+  }
+```
 
 
 # Parameter handling classes
