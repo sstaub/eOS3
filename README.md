@@ -741,10 +741,10 @@ void loop() {
 ```
 
 ## Encoder
-This class allows to construct an **encoder** objects to control parameter values.
+This class allows to construct an **Encoder** objects to control parameter values.
 
 ### Constructor
-Creates an **encoder** object,
+Creates an **Encoder** object,
 this should done before the `setup()`
 ```cpp
 Encoder(uint8_t pinA, uint8_t pinB, uint8_t direction = FORWARD);
@@ -819,9 +819,88 @@ void loop() {
 ```
 
 ## Wheel
+This class allows to construct an **Wheel** objects to control parameter values.
 
+### Constructor
+Creates an **Encoder** object,
+this should done before the `setup()`
+```cpp
+Wheeluint8_t pinA, uint8_t pinB, uint8_t direction = FORWARD);
+Wheel(direction_t direction = FORWARD);
+```
+- **pinA** and **pinB** are the connection Pins for the encoder hardware, not needed for virtual devices
+- **direction** is used for changing the direction of the encoder to clockwise if pinA and pinB are swapped. The directions are FORWARD (default) or REVERSE
 
+### Methods
 
+#### wheel()
+Before using the **Wheel** you must assign the wheel number you want control. This should done in `setup()` or in control functions for parameters.
+```cpp
+void wheel(uint16_t wheel);
+```
+- **wheel** is the wheel number which you want assign
+
+#### parse()
+Parse allows you to get parameter data. This can only done when none of the parameter control classes are used.
+If there is an new value, the function return `true`.
+**parse()** must used inside `maintain()`.
+```cpp
+bool parse();
+```
+
+#### value()
+Get the value of a parameter as an float.
+```cpp
+float value();
+```
+
+#### active()
+Check if there is an active value for the choosen parameter.
+This allows you to supress the output on displays.
+If there is a value, the function return `true`.
+You must use **parse()** before.
+```cpp
+bool active();
+```
+
+#### parameter()
+Returns the parameter name as a string. You must use **parse()** before.
+```cpp
+string parameter();
+```
+
+#### callback()
+You can add a callback function, which is triggered when there is a new parameter value inside the **parse()** function.
+This should done in `setup()`.
+```cpp
+void callback(cbptr call);
+```
+
+#### update()
+To check the actual encoder state you must call inside the `loop()`
+```cpp
+void update();
+void update(bool stateA, bool stateB);
+void update(int32_t motion);
+```
+- **stateA** optional for virtual devices
+- **stateA** optional for virtual devices
+- **motion** optional for direct input of the encoder motion, e.g. for Seesaw Encoders
+
+###**Example**
+```cpp
+Wheel wheel1(A0, A1, REVERSE);
+void setup() {
+  // ...
+  wheel1.wheel(1); // set wheel number 1
+  // ...
+  }
+void loop() {
+  // ...
+  wheel1.update();
+  // ...
+  }
+```
 
 ## Direct Select
 
