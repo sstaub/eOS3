@@ -903,15 +903,170 @@ void loop() {
 ```
 
 ## Direct Select
+This class allows you to control a **Direct Select**.
+Before using **Direct Select** you must call **initDS(type, buttons, index, page , flexi)**<br>
 
+## initDS(), part of the eOS3 helper class
+Initialise a **Direct Select** bank, this must done after an established connection, so this method should used inside the `connected()` function.
+```cpp
+button_t type, uint8_t buttons, uint8_t index = 1, uint16_t page = 1, bool flexi = false
+```
+- **type** DS button type
+- **init** index (bank) number, default 1
+- **page** fader page, default 1
+- **flexi** flexi mode, default false
 
+### Constructor
+Create a new **Direct select** object. This should done before `setup()`
+```cpp
+DS(uint8_t pin, uint8_t number, uint8_t index = 1);
+DS(uint8_t number, uint8_t index = 1);
+```
+- **pin** DS button pin, not needed for vitual devices
+- **number** DS button number
+- **index** DS index (bank), default 1
 
+### Methods
+
+#### update()
+To get the current button state you must call inside the `loop()`
+```cpp
+void update();
+void update(bool state);
+```
+
+###**Example**
+```cpp
+DS ds11(7, 1, 1); // DS button on pin 1, DS number 1 is controlled, index(bank) number is 1
+void setup() {
+  // ...
+  }
+void loop() {
+  ds1.update();
+  }
+void connected() {
+  // ...
+  eos.initDS(MACRO, 5); // init 5 DS Macro buttons
+  // ...
+  }
+```
 
 ## DSTool
+This class allows you configure the DS buttons. It gives you DS page control functions and also parsing for DS informations.
 
+### Constructor
+Create a FaderTool object. This should done before `setup()`
+```cpp
+DSTool(uint8_t pinUp, uint8_t pinDown);
+FaderTool();
+```
+- **pinUp** pin for the button increasing the page, not need for virtual devices.
+- **pinDown** pin for the button decreasing the page, not need for virtual devices.
 
+### Methods
 
+#### init()
+Initialzise the fader configuration similar to initFaders().
+```cpp
+void init(button_t type, uint8_t buttons, uint8_t index = 1);
+```
+- **type** DS type
+- **buttons** number of buttons
+- **index** the DS index(bank), default 1
 
+#### flexiButton()
+Set the pin of an optional Flexi button.
+```cpp
+void flexiButton(uint8_t pinFlexi);
+void flexiButton();
+```
+- **pinFlexi** pin for the optional flexi button, not need for virtual devices
+
+#### parse()
+Parse for DS data, return the number of the current parsed DS, -1 if there is new page number. This should done in `maintain()`
+```cpp
+int8_t parse();
+```
+
+#### callbackPage(), callbacData()
+There are several callback functions for different types of DS data, which includes page or DS number. This should done in `setup()`
+```cpp
+void callbackPage(cbptr2 call);
+void callbackData(cbptr2 call);
+```
+- **call** pointer to function(uint8_t)
+
+#### typeDS()
+This method allows you to change the DS type on runtime or to get the EOS name of the current DS type.
+```cpp
+void typeDS(button_t type);
+string typeDS();
+```
+- **type** DS button type
+
+#### page()
+Returns the current page number.
+```cpp
+uint8_t page();
+```
+
+#### flexi()
+Returns the current state of the flexi button. `true` if flexi mode.
+```cpp
+bool flexi();
+```
+
+#### label()
+Returns the label of a given DS.
+```cpp
+fader_t type(uint8_t number);
+```
+- **number** number of the DS button 1...x
+
+#### number()
+Returns the number of the current EOS DS button number.
+```cpp
+fader_t type(uint8_t number);
+```
+- **number** number of the DS button 1...x
+
+#### updateButtons()
+Updates the up/down button states, this must done in `loop()`
+```cpp
+void updateButtons();
+void updateButtons(bool stateUp, bool stateDown);
+```
+- **stateUp** button up state for virtual devices
+- **stateDown** button down state for virtual devices
+
+#### updateFlexi()
+Updates the flexi button state, this must done in `loop()`
+```cpp
+void updateFlexi();
+void updateFlexi(bool stateFlexi);
+```
+- **stateFlexi** button flexi state for virtual devices
+
+###**Example**
+```cpp
+// add the classes for DS buttons, see DS()
+DSTool dstool(0, 1); // use pin 0 and 1 for up/down buttons
+void setup() {
+  dstool.flexiButton(3); // pin 3 as an additional flexi button
+  }
+void loop() {
+  dstool.updateButtons();
+  dstool.updateFlexi();
+  // add the updates of configured DS buttons
+  }
+void connected() {
+  dstool.init(MACRO, 5);
+  }
+void maintain() {
+  int8_t ds = dsool.parse()
+  // here you can proceed all the data, or do it with callbacks
+  }
+```
 
 ## Submaster
 This class allows you to control a submaster with a hardware (slider) potentiometer as a fader and a bump button. See also the hardware advices above.
@@ -1253,6 +1408,9 @@ void update(bool stateUp, bool stateDown);
 FaderTool fadertool(0, 1); // use pin 0 and 1 for up/down buttons
 void loop() {
   fadertool.update();
+  }
+void connected() {
+  fadertool.init(5);
   }
 void maintain() {
   uint8_t fader = fadertool.parse()
