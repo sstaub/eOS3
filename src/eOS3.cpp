@@ -604,15 +604,15 @@ void Wheel::callback(cbptr call) {
 	this->call = call;
 	}
 
-void Wheel::wheelNumber(uint8_t wheel) {
-	this->wheel = wheel;
+void Wheel::wheel(uint8_t wheel) {
+	this->wheelNumber = wheel;
 	}
 
 bool Wheel::parse() {
 	if (osc.getPattern().find("/eos/out/active/wheel/") == 0) {
 		uint16_t whl = stoi(osc.getPattern().substr(osc.getPattern().rfind('/') + 1));
 		if (osc.getInt(2) == 0) { // category 0, no data
-			if (whl == wheel) {
+			if (whl == wheelNumber) {
 				param = "";
 				val = 0.0f;
 				act = false;
@@ -620,7 +620,7 @@ bool Wheel::parse() {
 				return true;
 				}
 			}
-		if (wheel == whl) {
+		if (wheelNumber == whl) {
 			param = osc.getString(1).substr(0, osc.getString(1).rfind('[') - 2);
 			val = osc.getFloat(3);
 			act = true;
@@ -644,7 +644,7 @@ string Wheel::parameter() {
 	}
 
 void Wheel::update() {
-	if (wheel == 0) return;
+	if (wheelNumber == 0) return;
 	encoderMotion = 0;
 	pinACurrent = digitalRead(pinA);	
 	if ((pinALast) && (!pinACurrent)) {
@@ -658,17 +658,17 @@ void Wheel::update() {
 		string wheelMsg = "/eos/active/wheel/";
 		if (accelerationState == true) encoderMotion *= accelerationTick;
 		if (shiftState == true) {
-			wheelMsg += "fine/" + to_string(wheel);
+			wheelMsg += "fine/" + to_string(wheelNumber);
 			}
 		else {
-			wheelMsg += "coarse/" + to_string(wheel);
+			wheelMsg += "coarse/" + to_string(wheelNumber);
 			}
 		osc.message(wheelMsg, encoderMotion);
 		}
 	}
 
 void Wheel::update(bool stateA, bool stateB) {
-	if (wheel == 0) return;
+	if (wheelNumber == 0) return;
 	encoderMotion = 0;
 	pinACurrent = !stateA;	
 	if ((pinALast) && (!pinACurrent)) {
@@ -682,17 +682,17 @@ void Wheel::update(bool stateA, bool stateB) {
 		string wheelMsg = "/eos/active/wheel/";
 		if (accelerationState == true) encoderMotion *= accelerationTick;
 		if (shiftState == true) {
-			wheelMsg += "fine/" + to_string(wheel);
+			wheelMsg += "fine/" + to_string(wheelNumber);
 			}
 		else {
-			wheelMsg += "coarse/" + to_string(wheel);
+			wheelMsg += "coarse/" + to_string(wheelNumber);
 			}
 		osc.message(wheelMsg, encoderMotion);
 		}
 	}
 
 void Wheel::update(int32_t motion) {
-	if (wheel == 0) return;
+	if (wheelNumber == 0) return;
 	if (motion == motionLast) return;
 	if (motion < motionLast) encoderMotion = -1;
 	if (motion > motionLast) encoderMotion = 1;
@@ -701,10 +701,10 @@ void Wheel::update(int32_t motion) {
 	string wheelMsg = "/eos/active/wheel/";
 	if (accelerationState == true) encoderMotion *= accelerationTick;
 	if (shiftState == true) {
-		wheelMsg += "fine/" + to_string(wheel);
+		wheelMsg += "fine/" + to_string(wheelNumber);
 		}
 	else {
-		wheelMsg += "coarse/" + to_string(wheel);
+		wheelMsg += "coarse/" + to_string(wheelNumber);
 		}
 	osc.message(wheelMsg, encoderMotion);
 	}
@@ -2320,7 +2320,7 @@ bool SelectDynamic::active(uint8_t encoder) {
 uint8_t SelectDynamic::wheel(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return 0;
 	if (encoder <= encoders)
-		return idx[encoder - 1];
+		return idx[encoder - 1] + 1;
 	return 0;
 	}
 

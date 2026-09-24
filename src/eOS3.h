@@ -728,7 +728,7 @@ class Wheel {
 		 * 
 		 * @param param parameter name as a String
 		 */
-		void wheelNumber(uint8_t wheel);
+		void wheel(uint8_t wheel);
 
 		/**
 		 * @brief Optional callback, triggered when new wheel data
@@ -779,11 +779,11 @@ class Wheel {
 		void update(int32_t motion); // this must handled directly
 
 	private:
-		uint8_t wheel;
 		uint8_t pinA;
 		uint8_t pinB;
 		uint8_t pinALast;
 		uint8_t pinACurrent;
+		uint16_t wheelNumber;
 		int32_t encoderMotion;
 		int32_t motionLast;
 		direction_t direction;
