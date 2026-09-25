@@ -960,8 +960,8 @@ Create a FaderTool object. This should done before `setup()`
 DSTool(uint8_t pinUp, uint8_t pinDown);
 FaderTool();
 ```
-- **pinUp** pin for the button increasing the page, not need for virtual devices.
-- **pinDown** pin for the button decreasing the page, not need for virtual devices.
+- **pinUp** pin for the button increasing the page, not needed for virtual devices.
+- **pinDown** pin for the button decreasing the page, not needed for virtual devices.
 
 ### Methods
 
@@ -1324,8 +1324,8 @@ Create a FaderTool object. This should done before `setup()`
 FaderTool(uint8_t pinUp, uint8_t pinDown);
 FaderTool();
 ```
-- **pinUp** pin for the button increasing the page, not need for virtual devices.
-- **pinDown** pin for the button decreasing the page, not need for virtual devices.
+- **pinUp** pin for the button increasing the page, not needed for virtual devices.
+- **pinDown** pin for the button decreasing the page, not needed for virtual devices.
 
 ### Methods
 
@@ -1431,13 +1431,13 @@ All classes works together with **Encoder** or **Wheel** class.
 This class allows you to control a parameter list with an Up/Down button to step through. The list have a wrap behavior. 
 
 ### Constructor
-Create parameter selection object. This should done before `setup()`
+Create **SelectParameter** object. This should done before `setup()`
 ```cpp
 SelectParameter(uint8_t pinUp, uint8_t pinDown, uint8_t encoders);
 SelectParameter(uint8_t encoders);
 ```
-- **pinUp** pin for the button increasing the index, not neede for virtual devices
-- **pinDown** pin for the button decreasing the index, not neede for virtual devices
+- **pinUp** pin for the button increasing the index, not needed for virtual devices
+- **pinDown** pin for the button decreasing the index, not needed for virtual devices
 - **encoders** number of the encoders you use in the application
 
 ### Methods
@@ -1500,6 +1500,13 @@ bool active(uint8_t encoder);
 ```
 - **encoder** number of the encoder
 
+#### wheel()
+Return the wheel number by encoder.
+```cpp
+uint16_t wheel(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
 #### pages()
 Return the number of all pages. 
 ```cpp
@@ -1507,7 +1514,7 @@ uint8_t pages();
 ```
 
 #### page()
-Return the actual selected page number. 
+Return the current selected page number. 
 ```cpp
 uint8_t page();
 ```
@@ -1522,12 +1529,309 @@ void update(bool stateUp, bool stateDown);
 - **stateDown** button down state for virtual devices
 
 ###**Example**
-You find a complete example in /examples/BOX1_S_LCD_I2C 
+You find a complete example in /examples/BOX1_S_LCD_I2C
+```cpp
+TBD short example
+```
 
 ## SelectCategory()
+This class allows you to control a parameter list with 6 category buttons to step through. The category lists have a wrap behavior. 
 
+### Constructor
+Create **SelectCategory** object. This should done before `setup()`
+```cpp
+SelectCategory(uint8_t pinIntens, uint8_t pinFocus, uint8_t pinColor, uint8_t pinImage, uint8_t pinForm, uint8_t pinShutter, uint8_t encoders);
+SelectCategory( uint8_t encoders);
+```
+- **pinIntens** pin for the Intens category button, not needed for virtual devices
+- **pinFocus** pin for the Focus category button, not needed for virtual devices
+- **pinColor** pin for the Color category button, not needed for virtual devices
+- **pinImage** pin for the Image category button, not needed for virtual devices
+- **pinForm** pin for the Form category button, not needed for virtual devices
+- **pinshutter** pin for the Shutter category button, not needed for virtual devices
+- **encoders** number of the encoders you use in the application
 
+### Methods
 
+#### parameter()
+Add a new parameter, you can also add an shorter alias name for display, this must done in `setup()`
+```cpp
+void parameter(category_t category, string parameter, string alias = "");
+```
+- **category** category for the parameter, INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
+- **name** name of the parameter, names must match EOS parameter names
+- **alias** alais name
+
+#### callbackPage()
+Add a callback function, the callback is triggered when page is changed by the Up/Down buttons. The callback can used to update the display. This must done in `setup()`
+```cpp
+void callback(cbptr call);
+```
+- **call** function pointer to the callback function
+
+#### callbackEncoder()
+Add a callback function, the callback is triggered when encoder data changed. 
+The function pointer includes also the number of the encoder. The callback can used to update the display. This must done in `setup()`
+```cpp
+void callbackEncoder(cbptr2 call);
+```
+- **call** pointer to the callback function(uint8_t)
+
+#### parse()
+This function parse the incoming OSC messages if there are parameter value updates. Returns the encoder number to update the value, 0 if there is no visible update<br>
+It must used with receiveOSC() function in `maintain()`
+```cpp
+uint8_t parse();
+```
+
+#### parameter()
+Get the name of a parameter by encoder. This is used when making display updates. For the **AbsoluteLevel** class, you must use this method.
+```cpp
+string parameter(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### alias()
+Get the alias name of a parameter by encoder. If there is no alias name available it returns the EOS parameter name. This is used when making display updates.
+```cpp
+string parameter(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### value()
+Returns the value of an encoder. This is used when making display updates. 
+```cpp
+float value(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### active()
+This method allows you to check if there is a valid parameter value on a given encoder number. Returns `true` if valid values.
+```cpp
+bool active(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### wheel()
+Return the wheel number by encoder.
+```cpp
+uint16_t wheel(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### pages()
+Return the number of pages of a category. 
+```cpp
+uint8_t pages(category_t category);
+```
+- **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
+
+#### page()
+Return the current page of a category.
+```cpp
+uint8_t pages(category_t category);
+```
+- **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
+
+#### page()
+Return the current selected page number. 
+```cpp
+uint8_t page();
+```
+
+#### count()
+Return the number of items of a category.
+```cpp
+uint8_t count(category_t category);
+```
+- **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
+
+#### category
+Return the current category.
+```cpp
+category_t category();
+```
+- **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
+
+#### categoryName()
+Return the current category as a string.
+```cpp
+string categoryName();
+```
+
+#### update()
+Updates the button states, this must done in `loop()`
+```cpp
+void update();
+void update(bool stateIntens, bool stateFocus, bool stateColor, bool stateImage, bool stateForm, bool stateShutter);
+```
+- **stateIntens** button Intens state for virtual devices
+- **stateFocus** button Focus state for virtual devices
+- **stateColor** button Color state for virtual devices
+- **stateImage** button Image state for virtual devices
+- **stateForm** button Form state for virtual devices
+- **stateShutter** button Shutter state for virtual devices
+
+###**Example**
+You find a complete example in /examples/BOX2_S_LCD_I2C and /examples/BOX4_C_LCD
+```cpp
+TBD short example
+```
+
+## SelectDyn()
+This class allows you to control parameter dynamic depending on the channel selection with 6 category buttons to step through. The category lists have a wrap behavior. 
+
+### Constructor
+Create **SelectDyn** object. This should done before `setup()`
+```cpp
+SelectDyn(uint8_t pinIntens, uint8_t pinFocus, uint8_t pinColor, uint8_t pinImage, uint8_t pinForm, uint8_t pinShutter, uint8_t encoders);
+SelectDyn( uint8_t encoders);
+```
+- **pinIntens** pin for the Intens category button, not needed for virtual devices
+- **pinFocus** pin for the Focus category button, not needed for virtual devices
+- **pinColor** pin for the Color category button, not needed for virtual devices
+- **pinImage** pin for the Image category button, not needed for virtual devices
+- **pinForm** pin for the Form category button, not needed for virtual devices
+- **pinshutter** pin for the Shutter category button, not needed for virtual devices
+- **encoders** number of the encoders you use in the application
+
+### Methods
+
+#### alias()
+You can also add an shorter alias name for display, this must done in `setup()`
+```cpp
+void alias(string parameter, string alias);
+```
+- **name** name of the parameter, names must match EOS parameter names
+- **alias** alais name
+
+#### callbackPage()
+Add a callback function, the callback is triggered when page is changed by the Up/Down buttons. The callback can used to update the display. This must done in `setup()`
+```cpp
+void callback(cbptr call);
+```
+- **call** function pointer to the callback function
+
+#### callbackEncoder()
+Add a callback function, the callback is triggered when encoder data changed. 
+The function pointer includes also the number of the encoder. The callback can used to update the display. This must done in `setup()`
+```cpp
+void callbackEncoder(cbptr2 call);
+```
+- **call** pointer to the callback function(uint8_t)
+
+#### parse()
+This function parse the incoming OSC messages if there are parameter value updates. Returns the encoder number to update the value, 0 if there is no visible update<br>
+It must used with receiveOSC() function in `maintain()`
+```cpp
+uint8_t parse();
+```
+
+#### parameter()
+Get the name of a parameter by encoder. This is used when making display updates. For the **AbsoluteLevel** class, you must use this method.
+```cpp
+string parameter(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### alias()
+Get the alias name of a parameter by encoder. If there is no alias name available it returns the EOS parameter name. This is used when making display updates.
+```cpp
+string parameter(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### value()
+Returns the value of an encoder. This is used when making display updates. 
+```cpp
+float value(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### active()
+This method allows you to check if there is a valid parameter on a given encoder number. Returns `true` if valid values.
+```cpp
+bool active(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### wheel()
+Return the wheel number by encoder.
+```cpp
+uint16_t wheel(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### pages()
+Return the number of pages of a category. 
+```cpp
+uint8_t pages(category_t category);
+```
+- **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
+
+#### pages()
+Return the number of pages of the current category. 
+```cpp
+uint8_t pages();
+```
+
+#### page()
+Return the current page of a category.
+```cpp
+uint8_t pages(category_t category);
+```
+- **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
+
+#### page()
+Return the current selected page number. 
+```cpp
+uint8_t page();
+```
+
+#### count()
+Return the number of items of a category.
+```cpp
+uint8_t count(category_t category);
+```
+- **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
+
+#### category
+Return the current category.
+```cpp
+category_t category();
+```
+- **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
+
+#### categoryName()
+Return the current category as a string.
+```cpp
+string categoryName();
+```
+
+#### update()
+Updates the button states, this must done in `loop()`
+```cpp
+void update();
+void update(bool stateIntens, bool stateFocus, bool stateColor, bool stateImage, bool stateForm, bool stateShutter);
+```
+- **stateIntens** button Intens state for virtual devices
+- **stateFocus** button Focus state for virtual devices
+- **stateColor** button Color state for virtual devices
+- **stateImage** button Image state for virtual devices
+- **stateForm** button Form state for virtual devices
+- **stateShutter** button Shutter state for virtual devices
+
+#### update()
+Update directly by a category, this should not done in `loop()`
+```cpp
+void update(category_t category);
+```
+
+###**Example**
+You find a complete example in /examples/BOX2_S_LCD_I2C and /examples/BOX4_C_LCD
+```cpp
+TBD short example
+```
 
 # Special parser classes
 The special parser classes allows to proceed additional data sended by EOS.
