@@ -1836,7 +1836,7 @@ void update(category_t category);
 - **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
 
 ###**Example**
-You find a complete example in /examples/BOX2_S_LCD_I2C and /examples/BOX4_C_LCD
+You find a complete example in /examples/BOX3_S_LCD_I2C and /examples/BOX5_C_LCD
 ```cpp
 TBD short example
 ```
