@@ -604,7 +604,7 @@ void Wheel::callback(cbptr call) {
 	this->call = call;
 	}
 
-void Wheel::wheel(uint8_t wheel) {
+void Wheel::wheel(uint16_t wheel) {
 	this->wheelNumber = wheel;
 	}
 
@@ -1872,7 +1872,7 @@ bool SelectParameter::active(uint8_t encoder) {
 	return false;
 	}
 
-int SelectParameter::wheel(uint8_t encoder) {
+uint16_t SelectParameter::wheel(uint8_t encoder) {
 	if (idx[encoder - 1] == -1) return 0;
 	if (encoder > 0 && encoder <= encoders) {
 		return param[idx[encoder - 1]].wheel;
@@ -2119,6 +2119,13 @@ bool SelectCategory::active(uint8_t encoder) {
 			return param[currentCategory][idx[encoder - 1]].active;
 		}
 	return false;
+	}
+
+uint16_t SelectCategory::wheel(uint8_t encoder) {
+	if (idx[encoder - 1] == -1) return 0;
+	if (encoder <= encoders)
+		return param[currentCategory][idx[encoder - 1]].wheel;
+	return 0;
 	}
 
 void SelectCategory::indexEncoder(category_t category) {

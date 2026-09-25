@@ -50,6 +50,7 @@ SOFTWARE.
 #include "Udp.h"
 #include "Client.h"
 
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -728,7 +729,7 @@ class Wheel {
 		 * 
 		 * @param param parameter name as a String
 		 */
-		void wheel(uint8_t wheel);
+		void wheel(uint16_t wheel);
 
 		/**
 		 * @brief Optional callback, triggered when new wheel data
@@ -990,7 +991,7 @@ class DSTool {
 		/**
 		 * @brief Set the pin of an optional Flexi button
 		 * 
-		 * @param pinFlexi 
+		 * @param pinFlexi not need for virtual devices
 		 */
 		void flexiButton(uint8_t pinFlexi);
 		void flexiButton();
@@ -1603,7 +1604,7 @@ class SelectParameter {
 		 * @param encoder number of the encoder
 		 * @return int wheel number
 		 */
-		int wheel(uint8_t encoder);
+		uint16_t wheel(uint8_t encoder);
 
 		/**
 		 * @brief Get the number of pages available
@@ -1639,7 +1640,7 @@ class SelectParameter {
 		int *idx;
 		struct Wheel {
 			bool active;
-			int wheel;
+			uint16_t wheel;
 			float value;
 			string parameter;
 			string alias;
@@ -1737,6 +1738,14 @@ class SelectCategory {
 		 * @return false if parameter is inactive
 		 */
 		bool active(uint8_t encoder);
+
+		/**
+		 * @brief Get the wheel number by encoder
+		 * 
+		 * @param encoder number of the encoder
+		 * @return int wheel number
+		 */
+		uint16_t wheel(uint8_t encoder);
 
 		/**
 		 * @brief Get the number of pages available
