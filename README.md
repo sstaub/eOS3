@@ -911,7 +911,7 @@ Initialise a **Direct Select** bank, this must done after an established connect
 ```cpp
 button_t type, uint8_t buttons, uint8_t index = 1, uint16_t page = 1, bool flexi = false
 ```
-- **type** DS button type
+- **type** DS button type, CHAN, GROUP, IP, CP, FP, BP, PRESET, MACRO, FX, SNAPSHOT, MS, SCENE
 - **init** index (bank) number, default 1
 - **page** fader page, default 1
 - **flexi** flexi mode, default false
@@ -970,7 +970,7 @@ Initialzise the fader configuration similar to initFaders().
 ```cpp
 void init(button_t type, uint8_t buttons, uint8_t index = 1);
 ```
-- **type** DS type
+- **type** DS type, CHAN, GROUP, IP, CP, FP, BP, PRESET, MACRO, FX, SNAPSHOT, MS, SCENE
 - **buttons** number of buttons
 - **index** the DS index(bank), default 1
 
@@ -1425,81 +1425,64 @@ There are 3 ways to handle parameters. You can find esxamples in the **/examples
 - **SelectCategory** allows you to make a parameter list organized in categories. It use 6 buttons for each parameter category.
 - **SelectDyn** works dynamic where only parameters are available depending from the channel selection. It use also 6 buttons for each parameter category.
 
+All classes works together with **Encoder** or **Wheel** class.
+
 ## SelectParameter
-This class allows you to control a parameter list with an Up/Down button to step through. The buttons have a wrap behavior. 
+This class allows you to control a parameter list with an Up/Down button to step through. The list have a wrap behavior. 
 
 ### Constructor
 Create parameter selection object. This should done before `setup()`
 ```cpp
-SelectParameter(uint8_t pinUp, uint8_t pinDown, uint8_t encoders, uint8_t parameters);
+SelectParameter(uint8_t pinUp, uint8_t pinDown, uint8_t encoders);
+SelectParameter(uint8_t encoders);
 ```
-- **pinUp** pin for the button increasing the index
-- **pinDown** pin for the button decreasing the index
+- **pinUp** pin for the button increasing the index, not neede for virtual devices
+- **pinDown** pin for the button decreasing the index, not neede for virtual devices
 - **encoders** number of the encoders you use in the application
-- **parameters** number of the parameters in the list
-
-###**Example**
-```cpp
-SelectParameter selection(6, 7, 2, 9); 
-// create an select parameter object with up button on pin 6, down button on pin 7, 
-// using two encoders and a parameter list with 9 items
-```
 
 ### Methods
 
 #### parameter()
-Set the name of a parameter by index, this must done in `setup()`
+Add add a new parameter, you can also add an shorter alias name for display, this must done in `setup()`
 ```cpp
-void parameter(uint8_t index, string name);
+void parameter(string parameter, string alias = "");
 ```
-- **index** position of the parameter in the list, start with 1
-- **name** name of the parameter, names must EOS parameter names
+- **name** name of the parameter, names must match EOS parameter names
+- **alias** alais name
 
-###**Example**
-```cpp
-void setup() {
-// ...
-  selection.parameter(1, "Intens");
-  selection.parameter(2, "Iris");
-  selection.parameter(3, "Edge");
-  selection.parameter(4, "Zoom");
-  selection.parameter(5, "Pan");
-  selection.parameter(6, "Tilt");
-  selection.parameter(7, "Red");
-  selection.parameter(8, "Blue");
-  selection.parameter(9, "Green");
-  // ...
-  }
-```
-
-#### callback()
+#### callbackPage()
 Add a callback function, the callback is triggered when page is changed by the Up/Down buttons. The callback can used to update the display. This must done in `setup()`
 ```cpp
-void callback(cbptr callback);
+void callback(cbptr call);
 ```
-- **callback** pointer to the callback function
+- **call** function pointer to the callback function
 
-###**Example**
+#### callbackEncoder()
+Add a callback function, the callback is triggered when encoder data changed. 
+The function pointer includes also the number of the encoder. The callback can used to update the display. This must done in `setup()`
 ```cpp
-void setup() {
-  // ...
-  selection.callback(updateEncoder);
-  // the function updateEncoder() will called on page change.
-  // ...
-  }
+void callbackEncoder(cbptr2 call);
 ```
+- **call** pointer to the callback function(uint8_t)
 
 #### parse()
 This function parse the incoming OSC messages if there are parameter value updates. Returns the encoder number to update the value, 0 if there is no visible update<br>
-It must used with receiveOSC() function in `loop()`
+It must used with receiveOSC() function in `maintain()`
 ```cpp
 uint8_t parse();
 ```
 
 #### parameter()
-Get the name of a parameter by encoder. This is used when making display updates.
+Get the name of a parameter by encoder. This is used when making display updates. For the **AbsoluteLevel** class, you must use this method.
 ```cpp
-const char* parameter(uint8_t encoder);
+string parameter(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
+#### alias()
+Get the alias name of a parameter by encoder. If there is no alias name available it returns the EOS parameter name. This is used when making display updates.
+```cpp
+string parameter(uint8_t encoder);
 ```
 - **encoder** number of the encoder
 
@@ -1510,15 +1493,17 @@ float value(uint8_t encoder);
 ```
 - **encoder** number of the encoder
 
+#### active()
+This method allows you to check if there is a valid parameter value on a given encoder number. Returns `true` if valid values.
+```cpp
+bool active(uint8_t encoder);
+```
+- **encoder** number of the encoder
+
 #### pages()
 Return the number of all pages. 
 ```cpp
 uint8_t pages();
-```
-
-###**Example**
-```cpp
-uint8_t numPages = selection.pages();
 ```
 
 #### page()
@@ -1527,25 +1512,21 @@ Return the actual selected page number.
 uint8_t page();
 ```
 
-###**Example**
-```cpp
-uint8_t currentPage = selection.page();
-```
-
 #### update()
-To get the actual state of the page number you must call inside the `loop()`
+Updates the button states, this must done in `loop()`
 ```cpp
 void update();
+void update(bool stateUp, bool stateDown);
 ```
+- **stateUp** button up state for virtual devices
+- **stateDown** button down state for virtual devices
 
 ###**Example**
-```cpp
-void loop() {
-	// ...
-	selection.update();
-	// ...
-	}
-```
+You find a complete example in /examples/BOX1_S_LCD_I2C 
+
+## SelectCategory()
+
+
 
 
 # Special parser classes
