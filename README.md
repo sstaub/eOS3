@@ -31,7 +31,7 @@ when a connected is established
 when a connection failed
 
 ## Installation
-1. Download from Releases
+1. Download from Releases or within the Arduino IDE
 2. Follow the instruction on the Arduino website https://www.arduino.cc/en/Guide/Libraries
 You can import the .zip file from the IDE with *Sketch / Include Library / Add .ZIP Library...*
 3. For PlatformIO Unzip and move the folder to the lib folder of your project.
