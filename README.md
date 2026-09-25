@@ -326,7 +326,7 @@ void loop() {
 ## reboot()
 Reboot your microcontroller, this is necessary to clear all data after connection lost. Only available for Pico and Teensy (not tested), must done in `disconnect()`
 ```cpp
-void update();
+void reboot();
 ```
 
 ###**Example**
