@@ -1672,6 +1672,13 @@ void update(bool stateIntens, bool stateFocus, bool stateColor, bool stateImage,
 - **stateForm** button Form state for virtual devices
 - **stateShutter** button Shutter state for virtual devices
 
+#### update()
+Update directly by a category, this should not done in `loop()`
+```cpp
+void update(category_t category);
+```
+- **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
+
 ###**Example**
 You find a complete example in /examples/BOX2_S_LCD_I2C and /examples/BOX4_C_LCD
 ```cpp
@@ -1826,6 +1833,7 @@ Update directly by a category, this should not done in `loop()`
 ```cpp
 void update(category_t category);
 ```
+- **category** INTENS, FOCUS, COLOR, IMAGE, FORM, SHUTTER
 
 ###**Example**
 You find a complete example in /examples/BOX2_S_LCD_I2C and /examples/BOX4_C_LCD
